@@ -1,374 +1,267 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Agent QA Report</title>
+  <meta charset="UTF-8">
+  <title>QA Dashboard</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <style>
-    :root {
-      --primary: #1976d2;
-      --primary-dark: #1458a1;
-      --accent: #4caf50;
-      --border: #e1e5f2;
-      --shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.08);
-      --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    body{
+      font-family:Arial;
+      background:#eef4ff;
+      padding:20px;
     }
 
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: var(--font-main);
-      background: radial-gradient(circle at top left, #e3f2fd 0, #f5f7fb 55%, #edf1ff 100%);
-      color: #1f2933;
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
     }
 
-    .shell {
-      max-width: 1150px;
-      margin: auto;
+    button{
+      background:#1976d2;
+      color:#fff;
+      border:none;
+      padding:12px 20px;
+      border-radius:10px;
+      cursor:pointer;
     }
 
-    .topbar {
-      background: linear-gradient(135deg, #1976d2, #673ab7);
-      color: white;
-      padding: 20px;
-      border-radius: 18px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-soft);
+    select,input{
+      padding:10px;
+      width:100%;
+      margin-top:5px;
+      margin-bottom:15px;
     }
 
-    .topbar h1 {
-      margin: 0;
-      font-size: 34px;
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:20px;
     }
 
-    .topbar p {
-      margin-top: 8px;
-      opacity: 0.9;
+    table th,table td{
+      border:1px solid #ddd;
+      padding:10px;
+      font-size:13px;
     }
 
-    .panel {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: var(--shadow-soft);
-      margin-bottom: 20px;
+    table th{
+      background:#f3e5f5;
     }
 
-    label {
-      display: block;
-      margin-top: 10px;
-      margin-bottom: 6px;
-      font-weight: 600;
+    .good{
+      background:#e8f5e9;
     }
 
-    select,
-    input[type="date"],
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #cbd2e1;
-      font-size: 14px;
-      font-family: var(--font-main);
-    }
-
-    .date-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    button {
-      margin-top: 18px;
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 999px;
-      background: var(--primary);
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: var(--primary-dark);
-    }
-
-    button:disabled {
-      background: #b7c5d8;
-      cursor: not-allowed;
-    }
-
-    #status {
-      margin-top: 12px;
-      color: #666;
-      font-size: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
-
-    th,
-    td {
-      border: 1px solid var(--border);
-      padding: 10px;
-      font-size: 13px;
-      vertical-align: top;
-    }
-
-    th {
-      background: #f3e5f5;
-      color: #45275b;
-    }
-
-    .good {
-      background: #f1fff2;
-    }
-
-    .bad {
-      background: #fff3f3;
-    }
-
-    .pending {
-      background: #fff8e1;
-    }
-
-    .category-title {
-      margin-top: 25px;
-      background: #f3e5f5;
-      padding: 10px;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    .summary-box {
-      background: #f1f8e9;
-      padding: 18px;
-      border-left: 5px solid var(--accent);
-      border-radius: 10px;
-      margin-top: 24px;
-      white-space: pre-wrap;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .dispute-btn {
-      width: auto;
-      padding: 12px 18px;
-      background: #d32f2f;
-    }
-
-    .dispute-btn:hover {
-      background: #a91f1f;
-    }
-
-    #disputePopup {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .popup-box {
-      background: white;
-      width: 380px;
-      max-width: 95%;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: var(--shadow-soft);
-    }
-
-    .popup-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .popup-actions button {
-      width: auto;
-      padding: 10px 16px;
-      margin-top: 0;
-    }
-
-    .cancel-btn {
-      background: #ccc;
-      color: black;
-    }
-
-    .cancel-btn:hover {
-      background: #aaa;
-    }
-
-    @media(max-width: 700px) {
-      .date-row {
-        grid-template-columns: 1fr;
-      }
+    .bad{
+      background:#ffebee;
     }
   </style>
 </head>
 
 <body>
 
-<div class="shell">
+<div class="card">
+  <h1>QA Dashboard</h1>
 
-  <div class="topbar">
-    <h1>Agent QA Report</h1>
-    <p>Filter any agent and generate QA insights in one click.</p>
-  </div>
+  <button onclick="login()">Login with Google</button>
 
-  <div class="panel">
-    <label>Agent</label>
-    <select id="agent">
-      <option>Loading...</option>
-    </select>
+  <p>
+    <b>Email:</b>
+    <span id="email">Not logged in</span>
+  </p>
 
-    <div class="date-row">
-      <div>
-        <label>From Date</label>
-        <input type="date" id="from">
-      </div>
+  <p>
+    <b>Role:</b>
+    <span id="role">-</span>
+  </p>
+</div>
 
-      <div>
-        <label>To Date</label>
-        <input type="date" id="to">
-      </div>
-    </div>
+<div class="card" id="filters" style="display:none;">
 
-    <button id="runBtn" onclick="runReport()">🔍 Generate Report</button>
+  <h2>Filters</h2>
 
-    <div id="status">Waiting...</div>
-  </div>
+  <label>Agent</label>
+  <select id="agentSelect"></select>
 
-  <div class="panel" id="summary" style="display:none;"></div>
+  <label>From Date</label>
+  <input type="date" id="fromDate">
 
-  <div class="panel" id="calls" style="display:none;"></div>
+  <label>To Date</label>
+  <input type="date" id="toDate">
 
-  <div class="panel" id="disputeStatusPanel" style="display:none;"></div>
+  <button onclick="loadReport()">
+    Generate Report
+  </button>
 
 </div>
 
-<div id="disputePopup">
-  <div class="popup-box">
-    <h3>Raise Dispute</h3>
+<div class="card" id="summary" style="display:none;"></div>
 
-    <label>SL No</label>
-    <input type="text" id="disputeSlNo" placeholder="Enter SL No">
-
-    <label>Description</label>
-    <textarea id="disputeDesc" rows="4" placeholder="Enter dispute reason"></textarea>
-
-    <div class="popup-actions">
-      <button class="cancel-btn" onclick="closeDispute()">Cancel</button>
-      <button onclick="submitDispute()">Submit</button>
-    </div>
-  </div>
-</div>
+<div class="card" id="calls" style="display:none;"></div>
 
 <script>
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKuEq-k7VtLj-SkcIqriP55eJwtNkDfyfV6fsPcxj3OXVaraCynWuxCvk19nqNzlg/exec";
+const firebaseConfig = {
+  apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
+  authDomain: "qa-dashboard-indmoney-2026.firebaseapp.com",
+  projectId: "qa-dashboard-indmoney-2026",
+  storageBucket: "qa-dashboard-indmoney-2026.firebasestorage.app",
+  messagingSenderId: "650282922385",
+  appId: "1:650282922385:web:c0beea4123918a8fa96a30"
+};
 
-async function safeJson(res) {
-  const text = await res.text();
+firebase.initializeApp(firebaseConfig);
 
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error(text);
+const auth = firebase.auth();
+
+const SCRIPT_URL =
+"https://YOUR_APPS_SCRIPT_URL/exec";
+
+let CURRENT_USER = null;
+let CURRENT_ROLE = null;
+let CURRENT_AGENT = null;
+
+async function login(){
+
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  try{
+
+    const result = await auth.signInWithPopup(provider);
+
+    const user = result.user;
+
+    CURRENT_USER = user.email;
+
+    document.getElementById("email").innerText =
+      user.email;
+
+    await validateUser(user.email);
+
+  }catch(err){
+
+    alert(err.message);
+
   }
 }
 
-async function init() {
-  const agentSelect = document.getElementById("agent");
-  const status = document.getElementById("status");
+async function validateUser(email){
 
-  status.textContent = "Loading agents...";
+  const response = await fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"login",
+      email:email
+    })
+  });
 
-  try {
-    const response = await fetch(`${SCRIPT_URL}?listAgents=1`);
-    const data = await safeJson(response);
+  const data = await response.json();
 
-    if (!data.ok) {
-      status.textContent = "Unable to load agents";
-      return;
-    }
+  console.log(data);
 
-    agentSelect.innerHTML = `<option value="">Select Agent</option>`;
+  if(!data.ok){
 
-    data.agents.forEach(agent => {
-      const option = document.createElement("option");
-      option.value = agent;
-      option.textContent = agent;
-      agentSelect.appendChild(option);
-    });
-
-    status.textContent = "Agents loaded successfully";
-
-  } catch (err) {
-    status.textContent = "Error: " + err.message;
-  }
-}
-
-async function runReport() {
-  const agent = document.getElementById("agent").value;
-  const from = document.getElementById("from").value;
-  const to = document.getElementById("to").value;
-  const status = document.getElementById("status");
-  const btn = document.getElementById("runBtn");
-
-  if (!agent || !from || !to) {
-    status.textContent = "Please select Agent, From Date and To Date";
+    alert(data.error);
     return;
+
   }
 
-  status.textContent = "Generating report...";
-  btn.disabled = true;
+  CURRENT_ROLE = data.role;
+  CURRENT_AGENT = data.agent;
 
-  try {
-    const url = `${SCRIPT_URL}?agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
-    const response = await fetch(url);
-    const data = await safeJson(response);
+  document.getElementById("role").innerText =
+    data.role;
 
-    if (!data.ok) {
-      status.textContent = data.error || "No data found";
-      btn.disabled = false;
-      return;
-    }
+  document.getElementById("filters").style.display =
+    "block";
 
-    renderSummary(data);
-    renderCalls(data.calls || []);
+  const select =
+    document.getElementById("agentSelect");
 
-    await loadDisputeStatus(agent, from, to);
+  select.innerHTML = "";
 
-    status.textContent = "Report generated successfully";
+  data.agents.forEach(agent=>{
 
-  } catch (err) {
-    status.textContent = "Error: " + err.message;
+    const option = document.createElement("option");
+
+    option.value = agent;
+    option.textContent = agent;
+
+    select.appendChild(option);
+
+  });
+
+  if(data.role !== "admin"){
+
+    select.disabled = true;
+
   }
-
-  btn.disabled = false;
 }
 
-function renderSummary(data) {
-  const div = document.getElementById("summary");
+async function loadReport(){
+
+  const agent =
+    document.getElementById("agentSelect").value;
+
+  const from =
+    document.getElementById("fromDate").value;
+
+  const to =
+    document.getElementById("toDate").value;
+
+  if(!from || !to){
+
+    alert("Select dates");
+    return;
+
+  }
+
+  const response = await fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"getReport",
+      email:CURRENT_USER,
+      agent:agent,
+      from:from,
+      to:to
+    })
+  });
+
+  const data = await response.json();
+
+  console.log(data);
+
+  if(!data.ok){
+
+    alert(data.error);
+    return;
+
+  }
+
+  renderSummary(data);
+  renderCalls(data.calls);
+
+}
+
+function renderSummary(data){
+
+  const div =
+    document.getElementById("summary");
+
   div.style.display = "block";
 
   div.innerHTML = `
+
     <h2>Performance Summary</h2>
 
     <table>
+
       <tr>
         <th>Agent</th>
         <td>${data.agent}</td>
@@ -388,383 +281,83 @@ function renderSummary(data) {
         <th>Period</th>
         <td>${data.period}</td>
       </tr>
+
     </table>
+
   `;
 }
 
-function renderCalls(calls) {
-  const div = document.getElementById("calls");
+function renderCalls(calls){
+
+  const div =
+    document.getElementById("calls");
+
   div.style.display = "block";
 
-  if (!calls || !calls.length) {
-    div.innerHTML = "<h2>No Calls Found</h2>";
-    return;
-  }
-
-  let good = 0;
-  let bad = 0;
-  let feedbackTexts = [];
-
-  calls.forEach(call => {
-    const finalScore = Number(call.finalScore || 0);
-
-    if (finalScore >= 22) {
-      good++;
-    } else {
-      bad++;
-    }
-
-    if (call.feedback && call.feedback.trim() !== "") {
-      feedbackTexts.push(call.feedback.trim());
-    }
-  });
-
-  const grouped = {};
-
-  calls.forEach(call => {
-    const category = call.queryType || "Other";
-
-    if (!grouped[category]) {
-      grouped[category] = [];
-    }
-
-    grouped[category].push(call);
-  });
-
   let html = `
-    <h2>Call Breakdown</h2>
-    <p><b>Total Calls Showing:</b> ${calls.length}</p>
+
+    <h2>Calls</h2>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>SL No</th>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Final Score</th>
+          <th>Audit %</th>
+          <th>Status</th>
+          <th>Feedback</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
   `;
 
-  Object.keys(grouped).forEach(category => {
-    html += `
-      <div class="category-title">
-        ${category} - ${grouped[category].length} calls
-      </div>
+  calls.forEach(call=>{
 
-      <table>
-        <thead>
-          <tr>
-            <th>SL No</th>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Final Score /25</th>
-            <th>Audit Score %</th>
-            <th>Status</th>
-            <th>Feedback</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    grouped[category].forEach(call => {
-      const finalScore = Number(call.finalScore || 0);
-      const auditScore = Number(call.score || 0);
-      const callStatus = finalScore >= 22 ? "✅ Good" : "❌ Issue";
-
-      html += `
-        <tr class="${finalScore >= 22 ? 'good' : 'bad'}">
-          <td>${call.slNo || ""}</td>
-          <td>${call.callDate || ""}</td>
-          <td>${call.queryType || ""}</td>
-          <td>${finalScore}</td>
-          <td>${auditScore}%</td>
-          <td>${callStatus}</td>
-          <td>${call.feedback || ""}</td>
-        </tr>
-      `;
-    });
+    const good =
+      Number(call.finalScore) >= 22;
 
     html += `
-        </tbody>
-      </table>
+
+      <tr class="${good ? 'good':'bad'}">
+
+        <td>${call.slNo}</td>
+
+        <td>${call.callDate}</td>
+
+        <td>${call.queryType}</td>
+
+        <td>${call.finalScore}</td>
+
+        <td>${call.score}%</td>
+
+        <td>
+          ${good ? 'Good':'Issue'}
+        </td>
+
+        <td>${call.feedback}</td>
+
+      </tr>
+
     `;
+
   });
 
-  const feedbackSummary = buildFeedbackSummary(feedbackTexts, good, bad, calls.length);
-
   html += `
-    <div class="summary-box">${feedbackSummary}</div>
-
-    <div style="margin-top:20px; text-align:right;">
-      <button class="dispute-btn" onclick="openDispute()">
-        🚩 Raise Dispute
-      </button>
-    </div>
+      </tbody>
+    </table>
   `;
 
   div.innerHTML = html;
 }
-
-function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
-  let summary = "";
-
-  summary += `📈 OVERALL SUMMARY\n\n`;
-  summary += `Total Calls Checked: ${totalCalls}\n`;
-  summary += `✅ Good Calls: ${good}\n`;
-  summary += `❌ Calls with Issues: ${bad}\n\n`;
-
-  if (!feedbackTexts.length) {
-    summary += `💡 SUGGESTION:\nNo feedback text found. Please check whether feedback column is mapped correctly in Apps Script.`;
-    return summary;
-  }
-
-  const allFeedback = feedbackTexts.join(" ").toLowerCase();
-
-  const issueMap = [
-    {
-      key: "Process Knowledge / SOP Gap",
-      words: ["process", "procedure", "sop", "incorrect information", "wrong information", "not explained", "incorrect", "wrong"]
-    },
-    {
-      key: "Pitching / Explanation Gap",
-      words: ["pitch", "explain", "explanation", "not informed", "not highlighted", "missed", "not shared", "not updated"]
-    },
-    {
-      key: "Tone / Empathy Gap",
-      words: ["tone", "empathy", "empathetic", "rude", "confidence", "interruption", "polite"]
-    },
-    {
-      key: "Verification / Mandatory Check Missed",
-      words: ["verification", "mandatory", "confirmation", "disclaimer", "authentication", "consent"]
-    },
-    {
-      key: "Call Handling / Ownership Gap",
-      words: ["ownership", "hold", "probing", "listening", "follow up", "resolution", "callback"]
-    },
-    {
-      key: "Customer Education Gap",
-      words: ["educate", "educated", "customer awareness", "clearly", "clarity", "guidance"]
-    }
-  ];
-
-  const detected = [];
-
-  issueMap.forEach(item => {
-    let count = 0;
-
-    item.words.forEach(word => {
-      if (allFeedback.includes(word)) {
-        count++;
-      }
-    });
-
-    if (count > 0) {
-      detected.push({
-        issue: item.key,
-        count: count
-      });
-    }
-  });
-
-  detected.sort((a, b) => b.count - a.count);
-
-  summary += `🔍 MAIN OBSERVATIONS FROM FEEDBACK:\n\n`;
-
-  if (detected.length) {
-    detected.slice(0, 5).forEach((item, index) => {
-      summary += `${index + 1}. ${item.issue}\n`;
-    });
-  } else {
-    summary += `1. Multiple quality issues found, but feedback does not match standard issue keywords.\n`;
-  }
-
-  summary += `\n📝 SAMPLE FEEDBACK POINTS:\n\n`;
-
-  feedbackTexts.slice(0, 5).forEach((text, index) => {
-    summary += `${index + 1}. ${text.substring(0, 180)}${text.length > 180 ? "..." : ""}\n`;
-  });
-
-  summary += `\n💡 ACTIONABLE SUGGESTIONS:\n\n`;
-
-  if (
-    allFeedback.includes("process") ||
-    allFeedback.includes("procedure") ||
-    allFeedback.includes("sop") ||
-    allFeedback.includes("incorrect") ||
-    allFeedback.includes("wrong")
-  ) {
-    summary += `• Agent should revise SOP/process flow and avoid giving incomplete or incorrect information.\n`;
-  }
-
-  if (
-    allFeedback.includes("pitch") ||
-    allFeedback.includes("explain") ||
-    allFeedback.includes("not informed") ||
-    allFeedback.includes("missed")
-  ) {
-    summary += `• Agent should improve explanation quality and cover all mandatory points clearly.\n`;
-  }
-
-  if (
-    allFeedback.includes("tone") ||
-    allFeedback.includes("empathy") ||
-    allFeedback.includes("empathetic") ||
-    allFeedback.includes("rude")
-  ) {
-    summary += `• Agent should work on tone, empathy, and customer-friendly communication.\n`;
-  }
-
-  if (
-    allFeedback.includes("verification") ||
-    allFeedback.includes("mandatory") ||
-    allFeedback.includes("confirmation") ||
-    allFeedback.includes("authentication")
-  ) {
-    summary += `• Agent should not miss verification, confirmation, and compliance checkpoints.\n`;
-  }
-
-  if (
-    allFeedback.includes("follow up") ||
-    allFeedback.includes("ownership") ||
-    allFeedback.includes("resolution")
-  ) {
-    summary += `• Agent should improve ownership, probing, and end-to-end resolution handling.\n`;
-  }
-
-  if (bad > good) {
-    summary += `• Since issue calls are high, agent should receive focused coaching with 2-3 sample call reviews.\n`;
-  } else {
-    summary += `• Overall performance is acceptable, but repeated feedback areas should be monitored.\n`;
-  }
-
-  return summary;
-}
-
-function openDispute() {
-  document.getElementById("disputePopup").style.display = "flex";
-}
-
-function closeDispute() {
-  document.getElementById("disputePopup").style.display = "none";
-}
-
-async function submitDispute() {
-  const slNo = document.getElementById("disputeSlNo").value.trim();
-  const description = document.getElementById("disputeDesc").value.trim();
-
-  const agent = document.getElementById("agent").value;
-  const from = document.getElementById("from").value;
-  const to = document.getElementById("to").value;
-
-  if (!slNo || !description) {
-    alert("Please enter SL No and Description");
-    return;
-  }
-
-  if (!agent || !from || !to) {
-    alert("Please select Agent, From Date and To Date");
-    return;
-  }
-
-  try {
-    const params = new URLSearchParams();
-
-    params.append("action", "dispute");
-    params.append("agent", agent);
-    params.append("slNo", slNo);
-    params.append("description", description);
-    params.append("from", from);
-    params.append("to", to);
-
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-      },
-      body: params.toString()
-    });
-
-    const data = await safeJson(response);
-
-    if (!data.ok) {
-      alert("Failed to submit dispute: " + (data.error || "Unknown error"));
-      return;
-    }
-
-    alert("Dispute submitted successfully");
-
-    document.getElementById("disputeSlNo").value = "";
-    document.getElementById("disputeDesc").value = "";
-
-    closeDispute();
-
-    await loadDisputeStatus(agent, from, to);
-
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-}
-
-async function loadDisputeStatus(agent, from, to) {
-  const panel = document.getElementById("disputeStatusPanel");
-
-  panel.style.display = "block";
-  panel.innerHTML = "<h2>Dispute Status</h2><p>Loading disputes...</p>";
-
-  try {
-    const url = `${SCRIPT_URL}?listDisputes=1&agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
-
-    const response = await fetch(url);
-    const data = await safeJson(response);
-
-    if (!data.ok) {
-      panel.innerHTML = "<h2>Dispute Status</h2><p>Unable to load disputes.</p>";
-      return;
-    }
-
-    const disputes = data.disputes || [];
-
-    if (!disputes.length) {
-      panel.innerHTML = "<h2>Dispute Status</h2><p>No disputes raised for this period.</p>";
-      return;
-    }
-
-    let html = `
-      <h2>Dispute Status</h2>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Raised Time</th>
-            <th>SL No</th>
-            <th>Description</th>
-            <th>Status</th>
-            <th>QA Reply / Clarification</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    disputes.forEach(d => {
-      const resolution = (d.resolution || "").trim();
-      const statusText = resolution ? "✅ Resolved" : "⏳ Pending";
-      const rowClass = resolution ? "good" : "pending";
-
-      html += `
-        <tr class="${rowClass}">
-          <td>${d.timestamp || ""}</td>
-          <td>${d.slNo || ""}</td>
-          <td>${d.description || ""}</td>
-          <td>${statusText}</td>
-          <td>${resolution || "QA reply pending"}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-        </tbody>
-      </table>
-    `;
-
-    panel.innerHTML = html;
-
-  } catch (err) {
-    panel.innerHTML = `<h2>Dispute Status</h2><p>Error: ${err.message}</p>`;
-  }
-}
-
-window.addEventListener("load", init);
 
 </script>
 
