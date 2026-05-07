@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agent QA Report</title>
+
   <style>
     :root {
       --bg: #f5f7fb;
@@ -16,7 +18,9 @@
       --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -27,693 +31,412 @@
     }
 
     .shell {
-      max-width: 1120px;
-      margin: 0 auto;
+      max-width: 1100px;
+      margin: auto;
     }
 
     .topbar {
       background: linear-gradient(135deg, #1976d2, #673ab7);
-      color: #fff;
+      color: white;
+      padding: 20px;
       border-radius: 18px;
-      padding: 16px 22px;
+      margin-bottom: 20px;
       box-shadow: var(--shadow-soft);
-      margin-bottom: 18px;
     }
 
-    .topbar-title {
-      font-size: 22px;
-      font-weight: 700;
+    .topbar h1 {
+      margin: 0;
+      font-size: 34px;
     }
 
-    .topbar-sub {
-      font-size: 13px;
-      margin-top: 4px;
+    .topbar p {
+      margin-top: 8px;
       opacity: 0.9;
     }
 
-    .main {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
     .panel {
-      background: #ffffff;
-      border-radius: var(--radius-lg);
-      padding: 16px 18px 18px;
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
       box-shadow: var(--shadow-soft);
-      border: 1px solid #edf0f6;
-    }
-
-    .panel-filters {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .panel-title {
-      margin: 0 0 10px;
-      font-size: 15px;
-      font-weight: 700;
+      margin-bottom: 20px;
     }
 
     label {
       display: block;
-      margin-top: 8px;
-      margin-bottom: 4px;
-      font-size: 13px;
+      margin-top: 10px;
+      margin-bottom: 6px;
       font-weight: 600;
-      color: #425466;
     }
 
     select,
     input[type="date"] {
       width: 100%;
-      padding: 8px 9px;
-      border-radius: var(--radius-sm);
+      padding: 12px;
+      border-radius: 10px;
       border: 1px solid #cbd2e1;
-      background: #f9fafb;
-      font-size: 13px;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-    }
-
-    select:focus,
-    input[type="date"]:focus {
-      outline: none;
-      border-color: var(--primary);
-      background: #ffffff;
-      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.18);
+      font-size: 14px;
     }
 
     .date-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    @media (max-width: 720px) {
-      body { padding: 12px; }
-      .date-row { grid-template-columns: 1fr; }
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
 
     button {
-      margin-top: 14px;
-      padding: 9px 16px;
+      margin-top: 18px;
+      width: 100%;
+      padding: 14px;
       border: none;
       border-radius: 999px;
-      background: var(--primary);
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
+      background: #1976d2;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
-      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     }
 
-    button:hover:not(:disabled) {
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(25, 118, 210, 0.3);
-    }
-
-    button:disabled {
-      background: #b7c5d8;
-      cursor: not-allowed;
-      box-shadow: none;
+    button:hover {
+      background: #1458a1;
     }
 
     #status {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #5f6c80;
-    }
-
-    #summary h2,
-    #calls h2 {
-      margin-top: 0;
-      font-size: 15px;
-      font-weight: 700;
+      margin-top: 12px;
+      color: #666;
+      font-size: 14px;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
-      font-size: 12px;
-      margin-top: 8px;
+      border-collapse: collapse;
+      margin-top: 15px;
     }
 
     th,
     td {
-      padding: 5px 7px;
-      border: 1px solid var(--border);
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-size: 13px;
       vertical-align: top;
     }
 
     th {
       background: #f3e5f5;
-      text-align: left;
-      font-weight: 600;
-      color: #45275b;
     }
 
-    .category-header {
-      background: #f3e5f5;
-      font-weight: 600;
-      padding: 6px 8px;
-      margin-top: 12px;
-      border-radius: 6px 6px 0 0;
-      border: 1px solid var(--border);
-      border-bottom: none;
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
+    .good {
+      background: #f1fff2;
     }
 
-    .category-header span.count {
-      font-weight: 500;
-      color: #5f6c80;
-    }
-
-    .good-row {
-      background: #f5fbf6;
-    }
-
-    .issue-row {
-      background: #fff7f7;
+    .bad {
+      background: #fff3f3;
     }
 
     .summary-box {
-      white-space: pre-wrap;
-      font-size: 13px;
       background: #f1f8e9;
-      border-radius: 8px;
-      padding: 10px 12px;
-      border-left: 4px solid var(--accent);
-      line-height: 1.5;
+      padding: 15px;
+      border-left: 5px solid #4caf50;
+      border-radius: 10px;
+      margin-top: 20px;
+      white-space: pre-wrap;
     }
 
-    #disputeDialog {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.35);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
+    @media(max-width: 700px) {
+      .date-row {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="topbar-title">Agent QA Report</div>
-      <div class="topbar-sub">Filter any agent and generate QA insights in one click.</div>
-    </header>
 
-    <main class="main">
-      <section class="panel panel-filters">
-        <h2 class="panel-title">Filters</h2>
+<div class="shell">
 
-        <label for="agent">Agent</label>
-        <select id="agent">
-          <option value="">Loading...</option>
-        </select>
-
-        <div class="date-row">
-          <div>
-            <label for="from">From Date</label>
-            <input id="from" type="date">
-          </div>
-          <div>
-            <label for="to">To Date</label>
-            <input id="to" type="date">
-          </div>
-        </div>
-
-        <button id="runBtn" onclick="runReport()">🔍 Generate Report</button>
-        <div id="status">Waiting...</div>
-      </section>
-
-      <section id="summary" class="panel" style="display:none;"></section>
-      <section id="calls" class="panel" style="display:none;"></section>
-      <section id="disputesPanel" class="panel" style="display:none;"></section>
-    </main>
+  <div class="topbar">
+    <h1>Agent QA Report</h1>
+    <p>Filter any agent and generate QA insights in one click.</p>
   </div>
 
-  <!-- Dispute popup -->
-  <div id="disputeDialog">
-    <div style="background:#fff; border-radius:10px; padding:14px 16px; width:320px; box-shadow:0 10px 25px rgba(15,23,42,0.35);">
-      <h3 style="margin:0 0 8px; font-size:14px;">Raise a dispute</h3>
-      <p style="margin:0 0 10px; font-size:12px; color:#5f6c80;">
-        Enter the SL No and a short description for the call you want to dispute.
-      </p>
-      <label style="margin-top:0; font-size:12px;">SL No</label>
-      <input id="dlgSl" type="text"
-             style="width:100%; padding:6px 7px; border-radius:6px; border:1px solid #cbd2e1; font-size:12px;">
-      <label style="margin-top:8px; font-size:12px;">Description</label>
-      <textarea id="dlgDesc" rows="3"
-                style="width:100%; padding:6px 7px; border-radius:6px; border:1px solid #cbd2e1; font-size:12px; resize:vertical;"></textarea>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
-        <button type="button" onclick="closeDisputeDialog()" style="margin-top:0; padding-inline:10px; background:#e5e7eb; color:#111827; box-shadow:none;">
-          Cancel
-        </button>
-        <button type="button" onclick="submitDisputeFromDialog()" style="margin-top:0; padding-inline:12px;">
-          Submit
-        </button>
+  <div class="panel">
+
+    <label>Agent</label>
+    <select id="agent">
+      <option>Loading...</option>
+    </select>
+
+    <div class="date-row">
+
+      <div>
+        <label>From Date</label>
+        <input type="date" id="from">
       </div>
+
+      <div>
+        <label>To Date</label>
+        <input type="date" id="to">
+      </div>
+
     </div>
+
+    <button onclick="runReport()">
+      🔍 Generate Report
+    </button>
+
+    <div id="status">Waiting...</div>
+
   </div>
 
-  <!-- Resolution / clarification popup -->
-  <div id="resolutionDialog" style="position:fixed; inset:0; background:rgba(15,23,42,0.35); display:none; align-items:center; justify-content:center; z-index:9999;">
-    <div style="background:#fff; border-radius:10px; padding:14px 16px; width:360px; max-width:95vw; box-shadow:0 10px 25px rgba(15,23,42,0.35);">
-      <h3 style="margin:0 0 8px; font-size:14px;">Dispute details</h3>
-      <div id="resolutionContent" style="font-size:12px; color:#111827; white-space:pre-wrap;"></div>
-      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-        <button type="button" onclick="closeResolutionDialog()" style="margin-top:0; padding-inline:12px; background:#1976d2; color:#fff; border:none; border-radius:999px; cursor:pointer;">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
+  <div class="panel" id="summary" style="display:none;"></div>
+
+  <div class="panel" id="calls" style="display:none;"></div>
+
+</div>
+
+<script>
+
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKuEq-k7VtLj-SkcIqriP55eJwtNkDfyfV6fsPcxj3OXVaraCynWuxCvk19nqNzlg/exec";
-  <script>
-    /* IMPORTANT: now using Vercel proxy */
-    const SCRIPT_URL = "/api";
 
-    async function safeJson(res) {
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        throw new Error("Not JSON: " + text.slice(0, 80));
-      }
+async function safeJson(res) {
+  const text = await res.text();
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(text);
+  }
+}
+
+async function init() {
+
+  const agentSelect = document.getElementById("agent");
+  const status = document.getElementById("status");
+
+  status.textContent = "Loading agents...";
+
+  try {
+
+    const response = await fetch(`${SCRIPT_URL}?listAgents=1`);
+    const data = await safeJson(response);
+
+    if (!data.ok) {
+      status.textContent = "Unable to load agents";
+      return;
     }
 
-    async function init() {
-      const agentSelect = document.getElementById('agent');
-      const status = document.getElementById('status');
+    agentSelect.innerHTML = `<option value="">Select Agent</option>`;
 
-      status.textContent = "Loading agents...";
+    data.agents.forEach(agent => {
 
-      try {
-        const res = await fetch(`${SCRIPT_URL}?listAgents=1`);
-        const data = await safeJson(res);
+      const option = document.createElement("option");
 
-        if (!data.ok) {
-          status.textContent = "Error loading agents: " + (data.error || "Unknown error");
-          return;
-        }
+      option.value = agent;
+      option.textContent = agent;
 
-        agentSelect.innerHTML = '<option value="">Select agent…</option>';
+      agentSelect.appendChild(option);
 
-        (data.agents || []).forEach(name => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          agentSelect.appendChild(opt);
-        });
+    });
 
-        status.textContent = "Agents loaded. Pick agent and dates, then Generate report.";
-      } catch (err) {
-        status.textContent = "Failed to load agents: " + err.message;
-      }
+    status.textContent = "Agents loaded successfully";
+
+  } catch (err) {
+
+    status.textContent = "Error: " + err.message;
+
+  }
+
+}
+
+async function runReport() {
+
+  const agent = document.getElementById("agent").value;
+  const from = document.getElementById("from").value;
+  const to = document.getElementById("to").value;
+
+  const status = document.getElementById("status");
+
+  if (!agent || !from || !to) {
+
+    status.textContent = "Please select all fields";
+    return;
+
+  }
+
+  status.textContent = "Generating report...";
+
+  try {
+
+    const url =
+      `${SCRIPT_URL}?agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
+
+    const response = await fetch(url);
+
+    const data = await safeJson(response);
+
+    if (!data.ok) {
+
+      status.textContent = data.error || "No data found";
+      return;
+
     }
 
-    function runReport() {
-      const agent = document.getElementById('agent').value.trim();
-      const from  = document.getElementById('from').value;
-      const to    = document.getElementById('to').value;
-      const status = document.getElementById('status');
-      const btn    = document.getElementById('runBtn');
+    renderSummary(data);
 
-      if (!agent || !from || !to) {
-        status.textContent = "Please select Agent, From and To dates.";
-        return;
-      }
+    renderCalls(data.calls || []);
 
-      status.textContent = "Running...";
-      btn.disabled = true;
+    status.textContent = "Report generated successfully";
 
-      const url = `${SCRIPT_URL}?agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
+  } catch (err) {
 
-      fetch(url)
-        .then(r => safeJson(r))
-        .then(async data => {
-          if (!data.ok) {
-            status.textContent = "Error: " + (data.error || "Unknown error");
-            return;
-          }
+    status.textContent = "Error: " + err.message;
 
-          renderSummary(data);
-          renderCallsGrouped(data.calls);
+  }
 
-          await loadDisputes(agent, from, to);
+}
 
-          status.textContent = "Done.";
-        })
-        .catch(err => {
-          status.textContent = "Failed: " + err.message;
-        })
-        .finally(() => {
-          btn.disabled = false;
-        });
+function renderSummary(data) {
+
+  const div = document.getElementById("summary");
+
+  div.style.display = "block";
+
+  div.innerHTML = `
+
+    <h2>Performance Summary</h2>
+
+    <table>
+
+      <tr>
+        <th>Agent</th>
+        <td>${data.agent}</td>
+      </tr>
+
+      <tr>
+        <th>Total Audits</th>
+        <td>${data.totalAudits}</td>
+      </tr>
+
+      <tr>
+        <th>Average Score</th>
+        <td>${data.averageScore}%</td>
+      </tr>
+
+      <tr>
+        <th>Period</th>
+        <td>${data.period}</td>
+      </tr>
+
+    </table>
+
+  `;
+
+}
+
+function renderCalls(calls) {
+
+  const div = document.getElementById("calls");
+
+  div.style.display = "block";
+
+  if (!calls.length) {
+
+    div.innerHTML = "<h2>No Calls Found</h2>";
+    return;
+
+  }
+
+  let html = `
+
+    <h2>Call Breakdown</h2>
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>SL No</th>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Feedback</th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+  `;
+
+  let good = 0;
+  let bad = 0;
+
+  calls.forEach(call => {
+
+    const score = Number(call.score || 0);
+
+    const status = score >= 90 ? "✅ Good" : "❌ Issue";
+
+    if (score >= 90) {
+      good++;
+    } else {
+      bad++;
     }
 
-    function renderSummary(data) {
-      const summaryDiv = document.getElementById('summary');
-      summaryDiv.style.display = 'block';
+    html += `
 
-      summaryDiv.innerHTML = `
-        <h2>Performance Summary</h2>
-        <table>
-          <tr>
-            <td style="font-weight:bold; width:130px;">Agent</td>
-            <td>${data.agent}</td>
-          </tr>
-          <tr>
-            <td style="font-weight:bold;">Total audits</td>
-            <td>${data.totalAudits}</td>
-          </tr>
-          <tr>
-            <td style="font-weight:bold;">Average score</td>
-            <td>${data.averageScore}%</td>
-          </tr>
-          <tr>
-            <td style="font-weight:bold;">Period</td>
-            <td>${data.period}</td>
-          </tr>
-        </table>
-      `;
-    }
+      <tr class="${score >= 90 ? 'good' : 'bad'}">
 
-    function renderCallsGrouped(calls) {
-      const callsDiv = document.getElementById('calls');
-      callsDiv.style.display = 'block';
+        <td>${call.slNo || ""}</td>
 
-      calls = (calls || []).filter(c => {
-        const q = (c.queryType || "").toLowerCase();
-        return q !== "idle call";
-      });
+        <td>${call.callDate || ""}</td>
 
-      if (!calls || calls.length === 0) {
-        callsDiv.innerHTML = "<h2>Call-by-call breakdown</h2><p>No calls in this period.</p>";
-        return;
-      }
+        <td>${call.queryType || ""}</td>
 
-      const groups = {};
-      let totalGood = 0;
-      let totalIssues = 0;
-      const allIssueTexts = [];
+        <td>${score}%</td>
 
-      calls.forEach(c => {
-        const category = c.queryType || "Other";
-        if (!groups[category]) groups[category] = [];
-        groups[category].push(c);
-      });
+        <td>${status}</td>
 
-      let html = '<h2>Call-by-call breakdown</h2>';
+        <td>${call.feedback || ""}</td>
 
-      Object.keys(groups).forEach(cat => {
-        const list = groups[cat];
-        html += `
-          <div class="category-header">
-            <span>${cat.toUpperCase()}</span>
-            <span class="count">${list.length} calls</span>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>SL No</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Feedback</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
+      </tr>
 
-        list.forEach(c => {
-          const score = typeof c.score === "number" ? c.score : parseFloat(c.score || "0");
-          let statusText = "";
-          let rowClass = "";
-          if (!isNaN(score) && score >= 90) {
-            statusText = "✅ Good";
-            rowClass = "good-row";
-            totalGood++;
-          } else {
-            statusText = "❌ Issues";
-            rowClass = "issue-row";
-            totalIssues++;
-            if (c.feedback) {
-              allIssueTexts.push(c.feedback);
-            }
-          }
+    `;
 
-          html += `
-            <tr class="${rowClass}">
-              <td style="text-align:center;">${c.slNo}</td>
-              <td>${c.queryType || ""}</td>
-              <td style="text-align:center;">${statusText}</td>
-              <td>${(c.feedback || "").replace(/\\\\n/g, "<br>")}</td>
-            </tr>
-          `;
-        });
+  });
 
-        html += "</tbody></table>";
-      });
+  html += `
+      </tbody>
+    </table>
+  `;
 
-      const issueSummary = buildSuggestions(totalGood, totalIssues, allIssueTexts);
+  html += `
 
-      html += `
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-top:18px; gap:12px;">
-          <div style="flex:1 1 auto;">
-            <h2 style="margin:0 0 4px;">Summary & Suggestions</h2>
-            <div class="summary-box">${issueSummary}</div>
-          </div>
-          <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-            <button type="button" onclick="openDisputeDialog()" style="margin-top:0; padding-inline:14px;">
-              🚩 Dispute
-            </button>
-            <span id="disputeStatus" style="font-size:11px; color:#5f6c80; max-width:180px; text-align:right;"></span>
-          </div>
-        </div>
-      `;
+    <div class="summary-box">
 
-      callsDiv.innerHTML = html;
-    }
+📈 OVERALL SUMMARY
 
-    function buildSuggestions(totalGood, totalIssues, issues) {
-      let text = "";
-      text += `📈 OVERALL: ${totalGood} good calls | ${totalIssues} calls with issues\\n\\n`;
+✅ Good Calls: ${good}
 
-      if (issues.length > 0) {
-        text += "⚠️ TOP ISSUES:\\n";
-        const freq = {};
-        issues.forEach(t => {
-          const key = t.toLowerCase();
-          freq[key] = (freq[key] || 0) + 1;
-        });
-        const top = Object.keys(freq).sort((a,b) => freq[b]-freq[a]).slice(0,3);
-        top.forEach(i => {
-          const clean = i.charAt(0).toUpperCase() + i.slice(1);
-          text += `  • ${clean}\\n`;
-        });
-        text += "\\n";
-      }
+❌ Calls with Issues: ${bad}
 
-      text += "💡 SUGGESTIONS:\\n";
-      const total = totalGood + totalIssues;
-      const issueRate = total ? totalIssues / total : 0;
+💡 SUGGESTION:
+${bad > good
+  ? "Focus on process adherence and communication quality."
+  : "Good performance. Maintain the same quality."}
 
-      let count = 1;
-      if (issueRate > 0.5) {
-        text += `  ${count++}. PRIORITY: Focus on quality - ${Math.round(issueRate*100)}% calls have issues\\n`;
-      }
-      const allIssueText = issues.join(" ").toLowerCase();
-      if (allIssueText.includes("pitch")) {
-        text += `  ${count++}. Practice pitch delivery and ensure all mandatory points are covered\\n`;
-      }
-      if (allIssueText.includes("procedure") || allIssueText.includes("process")) {
-        text += `  ${count++}. Review standard operating procedures regularly\\n`;
-      }
-      if (allIssueText.includes("empathetic") || allIssueText.includes("tone")) {
-        text += `  ${count++}. Work on empathy and tone while addressing customer concerns\\n`;
-      }
-      if (count === 1) {
-        text += "  • Excellent performance! Maintain current standards\\n";
-      }
-      return text;
-    }
+    </div>
 
-    function openDisputeDialog() {
-      const dlg = document.getElementById('disputeDialog');
-      const slInput = document.getElementById('dlgSl');
-      const descInput = document.getElementById('dlgDesc');
-      const statusSpan = document.getElementById('disputeStatus');
+  `;
 
-      slInput.value = "";
-      descInput.value = "";
-      if (statusSpan) statusSpan.textContent = "";
+  div.innerHTML = html;
 
-      dlg.style.display = "flex";
-    }
+}
 
-    function closeDisputeDialog() {
-      const dlg = document.getElementById('disputeDialog');
-      dlg.style.display = "none";
-    }
+window.addEventListener("load", init);
 
-    async function submitDisputeFromDialog() {
-      const slInput = document.getElementById('dlgSl');
-      const descInput = document.getElementById('dlgDesc');
-      const statusSpan = document.getElementById('disputeStatus');
+</script>
 
-      const slNo = (slInput.value || "").trim();
-      const description = (descInput.value || "").trim();
-
-      const agent = (document.getElementById('agent').value || "").trim();
-      const from = document.getElementById('from').value;
-      const to = document.getElementById('to').value;
-
-      if (!slNo || !description) {
-        statusSpan.textContent = "Please enter SL No and description.";
-        statusSpan.style.color = "#d32f2f";
-        closeDisputeDialog();
-        return;
-      }
-
-      statusSpan.textContent = "Submitting dispute...";
-      statusSpan.style.color = "#5f6c80";
-
-      try {
-        const params = new URLSearchParams();
-        params.append("action", "dispute");
-        params.append("agent", agent);
-        params.append("slNo", slNo);
-        params.append("description", description);
-        params.append("from", from);
-        params.append("to", to);
-
-        const res = await fetch(SCRIPT_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-          },
-          body: params.toString()
-        });
-
-        const data = await safeJson(res);
-
-        if (!data.ok) {
-          statusSpan.textContent = "Error: " + (data.error || "Could not save dispute");
-          statusSpan.style.color = "#d32f2f";
-          closeDisputeDialog();
-          return;
-        }
-
-        statusSpan.textContent = "Dispute submitted. QA will review this SL No.";
-        statusSpan.style.color = "#2e7d32";
-        closeDisputeDialog();
-
-        if (agent && from && to) {
-          await loadDisputes(agent, from, to);
-        }
-      } catch (err) {
-        statusSpan.textContent = "Error: " + err.message;
-        statusSpan.style.color = "#d32f2f";
-        closeDisputeDialog();
-      }
-    }
-
-    async function loadDisputes(agent, from, to) {
-      const panel = document.getElementById('disputesPanel');
-      panel.style.display = 'block';
-      panel.innerHTML = "<h2>Disputes</h2><p>Loading disputes...</p>";
-
-      try {
-        const url = `${SCRIPT_URL}?listDisputes=1&agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
-        const res = await fetch(url);
-        const data = await safeJson(res);
-
-        if (!data.ok) {
-          panel.innerHTML = "<h2>Disputes</h2><p>Error loading disputes.</p>";
-          return;
-        }
-
-        const list = data.disputes || [];
-        if (list.length === 0) {
-          panel.innerHTML = "<h2>Disputes</h2><p>No disputes for this period.</p>";
-          return;
-        }
-
-        let html = `
-          <h2>Disputes</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>SL No</th>
-                <th>Description</th>
-                <th>Resolution / Clarification</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        list.forEach((d, idx) => {
-          const hasRes = (d.resolution || "").trim().length > 0;
-          const resShort = hasRes
-            ? d.resolution.length > 60 ? d.resolution.slice(0, 60) + "..." : d.resolution
-            : "(Pending)";
-
-          html += `
-            <tr style="cursor:${hasRes ? 'pointer' : 'default'};"
-                ${hasRes ? `onclick="showResolution(${idx})"` : ""}
-                data-index="${idx}">
-              <td>${d.timestamp || ""}</td>
-              <td>${d.slNo || ""}</td>
-              <td>${(d.description || "").replace(/\\\\n/g, "<br>")}</td>
-              <td>${resShort.replace(/\\\\n/g, "<br>")}</td>
-            </tr>
-          `;
-        });
-
-        html += "</tbody></table>";
-
-        panel.innerHTML = html;
-        window.__lastDisputes = list;
-      } catch (err) {
-        panel.innerHTML = `<h2>Disputes</h2><p>Error: ${err.message}</p>`;
-      }
-    }
-
-    function showResolution(index) {
-      const list = window.__lastDisputes || [];
-      const item = list[index];
-      if (!item) return;
-
-      const dlg = document.getElementById('resolutionDialog');
-      const content = document.getElementById('resolutionContent');
-
-      const resText = item.resolution && item.resolution.trim().length
-        ? item.resolution
-        : "No resolution/clarification recorded yet.";
-
-      content.textContent =
-        `Agent: ${item.agent}\\nSL No: ${item.slNo}\\nTime: ${item.timestamp}\\n\\nDescription:\\n${item.description}\\n\\nResolution / Clarification:\\n${resText}`;
-
-      dlg.style.display = "flex";
-    }
-
-    function closeResolutionDialog() {
-      const dlg = document.getElementById('resolutionDialog');
-      dlg.style.display = "none";
-    }
-
-    window.addEventListener('load', init);
-  </script>
 </body>
 </html>
