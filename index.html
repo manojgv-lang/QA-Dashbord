@@ -8,24 +8,138 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; background:#eef4ff; padding:20px; color:#111827; }
-    .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
-    button { background:#1976d2; color:#fff; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; font-weight:bold; }
-    button:hover { background:#1458a1; }
-    button:disabled { background:#9ca3af; }
-    select, input, textarea { padding:10px; width:100%; margin-top:5px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:8px; box-sizing:border-box; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { border:1px solid #ddd; padding:10px; font-size:13px; vertical-align:top; }
-    th { background:#f3e5f5; }
-    .good { background:#e8f5e9; }
-    .bad { background:#ffebee; }
-    .pending { background:#fff8e1; }
-    .danger { background:#d32f2f; }
-    .summary-box { background:#f1f8e9; border-left:5px solid #4caf50; border-radius:10px; padding:18px; margin-top:22px; white-space:pre-wrap; line-height:1.6; }
-    .category-title { margin-top:24px; background:#f3e5f5; padding:10px; border-radius:8px; font-weight:bold; }
-    .loading { color:#1976d2; font-weight:bold; margin-top:12px; }
-    #disputePopup { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999; }
-    .popup { background:white; width:380px; max-width:95%; padding:22px; border-radius:14px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef4ff;
+      padding: 20px;
+      color: #111827;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1458a1;
+    }
+
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    select, input, textarea {
+      padding: 10px;
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3e5f5;
+    }
+
+    .good {
+      background: #e8f5e9;
+    }
+
+    .bad {
+      background: #ffebee;
+    }
+
+    .pending {
+      background: #fff8e1;
+    }
+
+    .danger {
+      background: #d32f2f;
+    }
+
+    .danger:hover {
+      background: #a91f1f;
+    }
+
+    .summary-box {
+      background: #f1f8e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 22px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .category-title {
+      margin-top: 24px;
+      background: #f3e5f5;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: #1976d2;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    #disputePopup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .popup {
+      background: white;
+      width: 380px;
+      max-width: 95%;
+      padding: 22px;
+      border-radius: 14px;
+    }
+
+    a {
+      color: #1976d2;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 
@@ -41,12 +155,16 @@
 
 <div class="card" id="filters" style="display:none;">
   <h2>Filters</h2>
+
   <label>Agent</label>
   <select id="agentSelect"></select>
+
   <label>From Date</label>
   <input type="date" id="fromDate">
+
   <label>To Date</label>
   <input type="date" id="toDate">
+
   <button id="reportBtn" onclick="loadReport()">Generate Report</button>
   <p id="reportStatus" class="loading"></p>
 </div>
@@ -58,12 +176,16 @@
 <div id="disputePopup">
   <div class="popup">
     <h3>Raise Dispute</h3>
+
     <label>SL No</label>
     <input type="text" id="disputeSlNo">
+
     <label>Description</label>
     <textarea id="disputeDesc" rows="4"></textarea>
+
     <button onclick="closeDispute()">Cancel</button>
     <button id="submitDisputeBtn" class="danger" onclick="submitDispute()">Submit</button>
+
     <p id="disputeSubmitStatus" class="loading"></p>
   </div>
 </div>
@@ -79,6 +201,7 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const SCRIPT_URL = "/api";
 
@@ -91,9 +214,12 @@ function setLoading(id, text) {
 async function apiCall(payload) {
   const response = await fetch(SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(payload)
   });
+
   return await response.json();
 }
 
@@ -104,11 +230,16 @@ async function login() {
   try {
     btn.disabled = true;
     setLoading("mainStatus", "Logging in...");
+
     const result = await auth.signInWithPopup(provider);
     CURRENT_USER = result.user.email;
+
     document.getElementById("email").innerText = CURRENT_USER;
+
     setLoading("mainStatus", "Verifying access...");
+
     await validateUser(CURRENT_USER);
+
     setLoading("mainStatus", "Login successful.");
   } catch (err) {
     alert(err.message);
@@ -119,7 +250,10 @@ async function login() {
 }
 
 async function validateUser(email) {
-  const data = await apiCall({ action:"login", email:email });
+  const data = await apiCall({
+    action: "login",
+    email: email
+  });
 
   if (!data.ok) {
     alert(data.error);
@@ -158,11 +292,11 @@ async function loadReport() {
     setLoading("reportStatus", "Fetching report data...");
 
     const data = await apiCall({
-      action:"getReport",
-      email:CURRENT_USER,
-      agent:agent,
-      from:from,
-      to:to
+      action: "getReport",
+      email: CURRENT_USER,
+      agent: agent,
+      from: from,
+      to: to
     });
 
     if (!data.ok) {
@@ -227,6 +361,7 @@ function renderCalls(calls) {
   Object.keys(grouped).forEach(category => {
     html += `
       <div class="category-title">${category} - ${grouped[category].length} calls</div>
+
       <table>
         <thead>
           <tr>
@@ -236,6 +371,7 @@ function renderCalls(calls) {
             <th>Final Score</th>
             <th>Audit %</th>
             <th>Status</th>
+            <th>Call Recording</th>
             <th>Feedback</th>
           </tr>
         </thead>
@@ -245,6 +381,10 @@ function renderCalls(calls) {
     grouped[category].forEach(call => {
       const goodCall = Number(call.score || 0) >= 80;
 
+      const recording = call.recordingLink
+        ? `<a href="${call.recordingLink}" target="_blank">Open Recording</a>`
+        : "No Link";
+
       html += `
         <tr class="${goodCall ? 'good' : 'bad'}">
           <td>${call.slNo || ""}</td>
@@ -253,12 +393,16 @@ function renderCalls(calls) {
           <td>${call.finalScore || ""}</td>
           <td>${call.score || ""}%</td>
           <td>${goodCall ? "Good" : "Bad"}</td>
+          <td>${recording}</td>
           <td>${call.feedback || ""}</td>
         </tr>
       `;
     });
 
-    html += `</tbody></table>`;
+    html += `
+        </tbody>
+      </table>
+    `;
   });
 
   html += `
@@ -307,13 +451,13 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
     text += `4. Verification / Mandatory Check Missed\n`;
   }
 
-  text += `\n📝 SAMPLE FEEDBACK POINTS:\n\n`;
+  text += `\n📝 SUMMARY AND FEEDBACK:\n\n`;
 
   feedbackTexts.slice(0, 5).forEach((f, i) => {
-    text += `${i + 1}. ${f.substring(0, 180)}${f.length > 180 ? "..." : ""}\n`;
+    text += `${i + 1}. ${f}\n\n`;
   });
 
-  text += `\n💡 ACTIONABLE SUGGESTIONS:\n\n`;
+  text += `💡 ACTIONABLE SUGGESTIONS:\n\n`;
 
   if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
     text += `• Agent should revise SOP/process flow and avoid incomplete or incorrect information.\n`;
@@ -350,34 +494,48 @@ async function submitDispute() {
   const to = document.getElementById("toDate").value;
   const slNo = document.getElementById("disputeSlNo").value.trim();
   const description = document.getElementById("disputeDesc").value.trim();
+  const btn = document.getElementById("submitDisputeBtn");
 
   if (!slNo || !description) {
     alert("Please enter SL No and Description");
     return;
   }
 
-  const data = await apiCall({
-    action:"submitDispute",
-    email:CURRENT_USER,
-    agent:agent,
-    from:from,
-    to:to,
-    slNo:slNo,
-    description:description
-  });
+  try {
+    btn.disabled = true;
+    setLoading("disputeSubmitStatus", "Dispute is getting submitted...");
 
-  if (!data.ok) {
-    alert(data.error);
-    return;
+    const data = await apiCall({
+      action: "submitDispute",
+      email: CURRENT_USER,
+      agent: agent,
+      from: from,
+      to: to,
+      slNo: slNo,
+      description: description
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      return;
+    }
+
+    setLoading("disputeSubmitStatus", "Dispute submitted successfully.");
+
+    alert("Dispute submitted successfully");
+
+    document.getElementById("disputeSlNo").value = "";
+    document.getElementById("disputeDesc").value = "";
+
+    closeDispute();
+    await loadDisputes();
+
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    setLoading("disputeSubmitStatus", "");
   }
-
-  alert("Dispute submitted successfully");
-
-  document.getElementById("disputeSlNo").value = "";
-  document.getElementById("disputeDesc").value = "";
-
-  closeDispute();
-  await loadDisputes();
 }
 
 async function loadDisputes() {
@@ -390,11 +548,11 @@ async function loadDisputes() {
   div.innerHTML = "<h2>Dispute Status</h2><p class='loading'>Fetching dispute status...</p>";
 
   const data = await apiCall({
-    action:"getDisputes",
-    email:CURRENT_USER,
-    agent:agent,
-    from:from,
-    to:to
+    action: "getDisputes",
+    email: CURRENT_USER,
+    agent: agent,
+    from: from,
+    to: to
   });
 
   if (!data.ok) {
@@ -411,6 +569,7 @@ async function loadDisputes() {
 
   let html = `
     <h2>Dispute Status</h2>
+
     <table>
       <thead>
         <tr>
@@ -440,7 +599,11 @@ async function loadDisputes() {
     `;
   });
 
-  html += `</tbody></table>`;
+  html += `
+      </tbody>
+    </table>
+  `;
+
   div.innerHTML = html;
 }
 </script>
