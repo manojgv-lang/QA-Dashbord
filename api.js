@@ -1,9 +1,13 @@
+// api.js – Vercel serverless function exposed at /api
+
 export default async function handler(req, res) {
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnottuUJ8uDxE5IuDdpvXGoKbs14Sk4M_5jtOWwhcFu73NyJ8FWodl5SoA_V99V5vh/exec";
 
+  // Take over the query string (?listAgents=1, ?agent=..., etc.)
   const queryPart = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
   const targetUrl = `${APPS_SCRIPT_URL}${queryPart}`;
 
+  // CORS preflight
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -17,6 +21,7 @@ export default async function handler(req, res) {
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" }
     };
 
+    // Forward POST body (for disputes)
     if (req.method === "POST") {
       fetchOptions.body = await getRawBody(req);
     }
@@ -24,9 +29,11 @@ export default async function handler(req, res) {
     const appsRes = await fetch(targetUrl, fetchOptions);
     const text = await appsRes.text();
 
+    // Add CORS headers so browser accepts the response
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
     res.status(appsRes.status).send(text);
   } catch (err) {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -34,6 +41,7 @@ export default async function handler(req, res) {
   }
 }
 
+// helper: read raw body for POST
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
