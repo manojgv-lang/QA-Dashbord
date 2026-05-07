@@ -1,5 +1,3 @@
-// api.js – Vercel serverless function at /api
-
 export default async function handler(req, res) {
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnottuUJ8uDxE5IuDdpvXGoKbs14Sk4M_5jtOWwhcFu73NyJ8FWodl5SoA_V99V5vh/exec";
 
