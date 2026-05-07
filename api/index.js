@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbxnottuUJ8uDxE5IuDdpvXGoKbs14Sk4M_5jtOWwhcFu73NyJ8FWodl5SoA_V99V5vh/exec";
+    "https://script.google.com/macros/s/AKfycbzKuEq-k7VtLj-SkcIqriP55eJwtNkDfyfV6fsPcxj3OXVaraCynWuxCvk19nqNzlg/exec";
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -26,14 +26,6 @@ export default async function handler(req, res) {
     });
 
     const text = await response.text();
-
-    if (text.trim().startsWith("<")) {
-      return res.status(500).json({
-        ok: false,
-        error:
-          "Apps Script returned HTML. Check deployment access: Execute as Me, Who has access Anyone.",
-      });
-    }
 
     return res.status(200).send(text);
   } catch (err) {
