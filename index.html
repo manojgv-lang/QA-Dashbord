@@ -398,9 +398,9 @@ function renderCalls(calls) {
   let feedbackTexts = [];
 
   calls.forEach(call => {
-    const score = Number(call.score || 0);
+    const finalScore = Number(call.finalScore || 0);
 
-    if (score >= 90) {
+    if (finalScore >= 22) {
       good++;
     } else {
       bad++;
@@ -440,7 +440,8 @@ function renderCalls(calls) {
             <th>SL No</th>
             <th>Date</th>
             <th>Category</th>
-            <th>Score</th>
+            <th>Final Score /25</th>
+            <th>Audit Score %</th>
             <th>Status</th>
             <th>Feedback</th>
           </tr>
@@ -449,15 +450,17 @@ function renderCalls(calls) {
     `;
 
     grouped[category].forEach(call => {
-      const score = Number(call.score || 0);
-      const callStatus = score >= 90 ? "✅ Good" : "❌ Issue";
+      const finalScore = Number(call.finalScore || 0);
+      const auditScore = Number(call.score || 0);
+      const callStatus = finalScore >= 22 ? "✅ Good" : "❌ Issue";
 
       html += `
-        <tr class="${score >= 90 ? 'good' : 'bad'}">
+        <tr class="${finalScore >= 22 ? 'good' : 'bad'}">
           <td>${call.slNo || ""}</td>
           <td>${call.callDate || ""}</td>
           <td>${call.queryType || ""}</td>
-          <td>${score}%</td>
+          <td>${finalScore}</td>
+          <td>${auditScore}%</td>
           <td>${callStatus}</td>
           <td>${call.feedback || ""}</td>
         </tr>
