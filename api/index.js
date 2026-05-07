@@ -11,15 +11,29 @@ export default async function handler(req, res) {
   }
 
   try {
+    const payload =
+      typeof req.body === "string"
+        ? JSON.parse(req.body || "{}")
+        : req.body || {};
+
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(req.body || {}),
+      body: JSON.stringify(payload),
+      redirect: "follow",
     });
 
     const text = await response.text();
+
+    if (text.trim().startsWith("<")) {
+      return res.status(500).json({
+        ok: false,
+        error:
+          "Apps Script returned HTML. Check deployment access: Execute as Me, Who has access Anyone.",
+      });
+    }
 
     return res.status(200).send(text);
   } catch (err) {
