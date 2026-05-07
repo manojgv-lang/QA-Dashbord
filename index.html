@@ -300,7 +300,8 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnottuUJ8uDxE5IuDdpvXGoKbs14Sk4M_5jtOWwhcFu73NyJ8FWodl5SoA_V99V5vh/exec";
+    /* IMPORTANT: now using Vercel proxy */
+    const SCRIPT_URL = "/api";
 
     async function safeJson(res) {
       const text = await res.text();
@@ -476,7 +477,7 @@
               <td style="text-align:center;">${c.slNo}</td>
               <td>${c.queryType || ""}</td>
               <td style="text-align:center;">${statusText}</td>
-              <td>${(c.feedback || "").replace(/\\n/g, "<br>")}</td>
+              <td>${(c.feedback || "").replace(/\\\\n/g, "<br>")}</td>
             </tr>
           `;
         });
@@ -506,10 +507,10 @@
 
     function buildSuggestions(totalGood, totalIssues, issues) {
       let text = "";
-      text += `📈 OVERALL: ${totalGood} good calls | ${totalIssues} calls with issues\n\n`;
+      text += `📈 OVERALL: ${totalGood} good calls | ${totalIssues} calls with issues\\n\\n`;
 
       if (issues.length > 0) {
-        text += "⚠️ TOP ISSUES:\n";
+        text += "⚠️ TOP ISSUES:\\n";
         const freq = {};
         issues.forEach(t => {
           const key = t.toLowerCase();
@@ -518,31 +519,31 @@
         const top = Object.keys(freq).sort((a,b) => freq[b]-freq[a]).slice(0,3);
         top.forEach(i => {
           const clean = i.charAt(0).toUpperCase() + i.slice(1);
-          text += `  • ${clean}\n`;
+          text += `  • ${clean}\\n`;
         });
-        text += "\n";
+        text += "\\n";
       }
 
-      text += "💡 SUGGESTIONS:\n";
+      text += "💡 SUGGESTIONS:\\n";
       const total = totalGood + totalIssues;
       const issueRate = total ? totalIssues / total : 0;
 
       let count = 1;
       if (issueRate > 0.5) {
-        text += `  ${count++}. PRIORITY: Focus on quality - ${Math.round(issueRate*100)}% calls have issues\n`;
+        text += `  ${count++}. PRIORITY: Focus on quality - ${Math.round(issueRate*100)}% calls have issues\\n`;
       }
       const allIssueText = issues.join(" ").toLowerCase();
       if (allIssueText.includes("pitch")) {
-        text += `  ${count++}. Practice pitch delivery and ensure all mandatory points are covered\n`;
+        text += `  ${count++}. Practice pitch delivery and ensure all mandatory points are covered\\n`;
       }
       if (allIssueText.includes("procedure") || allIssueText.includes("process")) {
-        text += `  ${count++}. Review standard operating procedures regularly\n`;
+        text += `  ${count++}. Review standard operating procedures regularly\\n`;
       }
       if (allIssueText.includes("empathetic") || allIssueText.includes("tone")) {
-        text += `  ${count++}. Work on empathy and tone while addressing customer concerns\n`;
+        text += `  ${count++}. Work on empathy and tone while addressing customer concerns\\n`;
       }
       if (count === 1) {
-        text += "  • Excellent performance! Maintain current standards\n";
+        text += "  • Excellent performance! Maintain current standards\\n";
       }
       return text;
     }
@@ -674,8 +675,8 @@
                 data-index="${idx}">
               <td>${d.timestamp || ""}</td>
               <td>${d.slNo || ""}</td>
-              <td>${(d.description || "").replace(/\\n/g, "<br>")}</td>
-              <td>${resShort.replace(/\\n/g, "<br>")}</td>
+              <td>${(d.description || "").replace(/\\\\n/g, "<br>")}</td>
+              <td>${resShort.replace(/\\\\n/g, "<br>")}</td>
             </tr>
           `;
         });
@@ -702,7 +703,7 @@
         : "No resolution/clarification recorded yet.";
 
       content.textContent =
-        `Agent: ${item.agent}\nSL No: ${item.slNo}\nTime: ${item.timestamp}\n\nDescription:\n${item.description}\n\nResolution / Clarification:\n${resText}`;
+        `Agent: ${item.agent}\\nSL No: ${item.slNo}\\nTime: ${item.timestamp}\\n\\nDescription:\\n${item.description}\\n\\nResolution / Clarification:\\n${resText}`;
 
       dlg.style.display = "flex";
     }
