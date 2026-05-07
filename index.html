@@ -37,6 +37,11 @@
       background: #1458a1;
     }
 
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
     select, input, textarea {
       padding: 10px;
       width: 100%;
@@ -84,6 +89,30 @@
       background: #a91f1f;
     }
 
+    .summary-box {
+      background: #f1f8e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 22px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .category-title {
+      margin-top: 24px;
+      background: #f3e5f5;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: #1976d2;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
     #disputePopup {
       display: none;
       position: fixed;
@@ -109,10 +138,11 @@
 <div class="card">
   <h1>QA Dashboard</h1>
 
-  <button onclick="login()">Login with Google</button>
+  <button id="loginBtn" onclick="login()">Login with Google</button>
 
   <p><b>Email:</b> <span id="email">Not logged in</span></p>
   <p><b>Role:</b> <span id="role">-</span></p>
+  <p id="mainStatus" class="loading"></p>
 </div>
 
 <div class="card" id="filters" style="display:none;">
@@ -127,7 +157,8 @@
   <label>To Date</label>
   <input type="date" id="toDate">
 
-  <button onclick="loadReport()">Generate Report</button>
+  <button id="reportBtn" onclick="loadReport()">Generate Report</button>
+  <p id="reportStatus" class="loading"></p>
 </div>
 
 <div class="card" id="summary" style="display:none;"></div>
@@ -145,7 +176,8 @@
     <textarea id="disputeDesc" rows="4"></textarea>
 
     <button onclick="closeDispute()">Cancel</button>
-    <button class="danger" onclick="submitDispute()">Submit</button>
+    <button id="submitDisputeBtn" class="danger" onclick="submitDispute()">Submit</button>
+    <p id="disputeSubmitStatus" class="loading"></p>
   </div>
 </div>
 
@@ -167,10 +199,31 @@ const SCRIPT_URL = "/api";
 let CURRENT_USER = null;
 let CURRENT_ROLE = null;
 
+function setLoading(id, text) {
+  document.getElementById(id).textContent = text || "";
+}
+
+async function apiCall(payload) {
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+  return data;
+}
+
 async function login() {
   const provider = new firebase.auth.GoogleAuthProvider();
+  const btn = document.getElementById("loginBtn");
 
   try {
+    btn.disabled = true;
+    setLoading("mainStatus", "Logging in...");
+
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
 
@@ -178,25 +231,24 @@ async function login() {
 
     document.getElementById("email").innerText = user.email;
 
+    setLoading("mainStatus", "Verifying access...");
+
     await validateUser(user.email);
+
+    setLoading("mainStatus", "Login successful.");
   } catch (err) {
     alert(err.message);
+    setLoading("mainStatus", "");
+  } finally {
+    btn.disabled = false;
   }
 }
 
 async function validateUser(email) {
-  const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      action: "login",
-      email: email
-    })
+  const data = await apiCall({
+    action: "login",
+    email: email
   });
-
-  const data = await response.json();
 
   if (!data.ok) {
     alert(data.error);
@@ -220,6 +272,8 @@ async function validateUser(email) {
 
   if (data.role !== "admin") {
     select.disabled = true;
+  } else {
+    select.disabled = false;
   }
 }
 
@@ -227,36 +281,42 @@ async function loadReport() {
   const agent = document.getElementById("agentSelect").value;
   const from = document.getElementById("fromDate").value;
   const to = document.getElementById("toDate").value;
+  const btn = document.getElementById("reportBtn");
 
   if (!from || !to) {
     alert("Please select dates");
     return;
   }
 
-  const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
+  try {
+    btn.disabled = true;
+    setLoading("reportStatus", "Fetching report data...");
+
+    const data = await apiCall({
       action: "getReport",
       email: CURRENT_USER,
       agent: agent,
       from: from,
       to: to
-    })
-  });
+    });
 
-  const data = await response.json();
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("reportStatus", "");
+      return;
+    }
 
-  if (!data.ok) {
-    alert(data.error);
-    return;
+    renderSummary(data);
+    renderCalls(data.calls);
+    await loadDisputes();
+
+    setLoading("reportStatus", "Report loaded successfully.");
+  } catch (err) {
+    alert(err.message);
+    setLoading("reportStatus", "");
+  } finally {
+    btn.disabled = false;
   }
-
-  renderSummary(data);
-  renderCalls(data.calls);
-  loadDisputes();
 }
 
 function renderSummary(data) {
@@ -278,42 +338,73 @@ function renderCalls(calls) {
   const div = document.getElementById("calls");
   div.style.display = "block";
 
-  let html = `
-    <h2>Calls</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>SL No</th>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Final Score</th>
-          <th>Audit %</th>
-          <th>Status</th>
-          <th>Feedback</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  let good = 0;
+  let bad = 0;
+  let feedbackTexts = [];
+  let grouped = {};
 
   calls.forEach(call => {
-    const good = Number(call.finalScore) >= 22;
+    const finalScore = Number(call.finalScore || 0);
+
+    if (finalScore >= 22) good++;
+    else bad++;
+
+    if (call.feedback) feedbackTexts.push(call.feedback);
+
+    const category = call.queryType || "Other";
+    if (!grouped[category]) grouped[category] = [];
+    grouped[category].push(call);
+  });
+
+  let html = `
+    <h2>Call Breakdown</h2>
+    <p><b>Total Calls Showing:</b> ${calls.length}</p>
+  `;
+
+  Object.keys(grouped).forEach(category => {
+    html += `
+      <div class="category-title">${category} - ${grouped[category].length} calls</div>
+      <table>
+        <thead>
+          <tr>
+            <th>SL No</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Final Score</th>
+            <th>Audit %</th>
+            <th>Status</th>
+            <th>Feedback</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    grouped[category].forEach(call => {
+      const goodCall = Number(call.finalScore) >= 22;
+
+      html += `
+        <tr class="${goodCall ? 'good' : 'bad'}">
+          <td>${call.slNo || ""}</td>
+          <td>${call.callDate || ""}</td>
+          <td>${call.queryType || ""}</td>
+          <td>${call.finalScore || ""}</td>
+          <td>${call.score || ""}%</td>
+          <td>${goodCall ? "Good" : "Issue"}</td>
+          <td>${call.feedback || ""}</td>
+        </tr>
+      `;
+    });
 
     html += `
-      <tr class="${good ? 'good' : 'bad'}">
-        <td>${call.slNo || ""}</td>
-        <td>${call.callDate || ""}</td>
-        <td>${call.queryType || ""}</td>
-        <td>${call.finalScore || ""}</td>
-        <td>${call.score || ""}%</td>
-        <td>${good ? "Good" : "Issue"}</td>
-        <td>${call.feedback || ""}</td>
-      </tr>
+        </tbody>
+      </table>
     `;
   });
 
   html += `
-      </tbody>
-    </table>
+    <div class="summary-box">
+${buildFeedbackSummary(feedbackTexts, good, bad, calls.length)}
+    </div>
 
     <div style="text-align:right; margin-top:20px;">
       <button class="danger" onclick="openDispute()">Raise Dispute</button>
@@ -321,6 +412,76 @@ function renderCalls(calls) {
   `;
 
   div.innerHTML = html;
+}
+
+function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
+  let text = "";
+
+  text += `📈 OVERALL SUMMARY\n\n`;
+  text += `Total Calls Checked: ${totalCalls}\n`;
+  text += `✅ Good Calls: ${good}\n`;
+  text += `❌ Calls with Issues: ${bad}\n\n`;
+
+  if (!feedbackTexts.length) {
+    text += `💡 SUGGESTION:\nNo feedback text found. Please check whether feedback column is mapped correctly.`;
+    return text;
+  }
+
+  const feedback = feedbackTexts.join(" ").toLowerCase();
+
+  text += `🔍 MAIN OBSERVATIONS FROM FEEDBACK:\n\n`;
+
+  if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
+    text += `1. Process Knowledge / SOP Gap\n`;
+  }
+
+  if (feedback.includes("pitch") || feedback.includes("explain") || feedback.includes("not informed") || feedback.includes("missed")) {
+    text += `2. Pitching / Explanation Gap\n`;
+  }
+
+  if (feedback.includes("tone") || feedback.includes("empathy") || feedback.includes("empathetic")) {
+    text += `3. Tone / Empathy Gap\n`;
+  }
+
+  if (feedback.includes("verification") || feedback.includes("mandatory") || feedback.includes("confirmation")) {
+    text += `4. Verification / Mandatory Check Missed\n`;
+  }
+
+  if (feedback.includes("ownership") || feedback.includes("follow up") || feedback.includes("resolution")) {
+    text += `5. Ownership / Resolution Gap\n`;
+  }
+
+  text += `\n📝 SAMPLE FEEDBACK POINTS:\n\n`;
+
+  feedbackTexts.slice(0, 5).forEach((f, i) => {
+    text += `${i + 1}. ${f.substring(0, 180)}${f.length > 180 ? "..." : ""}\n`;
+  });
+
+  text += `\n💡 ACTIONABLE SUGGESTIONS:\n\n`;
+
+  if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
+    text += `• Agent should revise SOP/process flow and avoid incomplete or incorrect information.\n`;
+  }
+
+  if (feedback.includes("pitch") || feedback.includes("explain") || feedback.includes("missed")) {
+    text += `• Agent should improve explanation quality and cover mandatory points clearly.\n`;
+  }
+
+  if (feedback.includes("tone") || feedback.includes("empathy")) {
+    text += `• Agent should work on tone, empathy, and customer-friendly communication.\n`;
+  }
+
+  if (feedback.includes("verification") || feedback.includes("mandatory")) {
+    text += `• Agent should not miss verification, confirmation, and compliance checkpoints.\n`;
+  }
+
+  if (bad > good) {
+    text += `• Since issue calls are high, focused coaching with 2-3 sample call reviews is required.\n`;
+  } else {
+    text += `• Overall performance is acceptable, but repeated feedback areas should be monitored.\n`;
+  }
+
+  return text;
 }
 
 function openDispute() {
@@ -337,18 +498,18 @@ async function submitDispute() {
   const to = document.getElementById("toDate").value;
   const slNo = document.getElementById("disputeSlNo").value.trim();
   const description = document.getElementById("disputeDesc").value.trim();
+  const btn = document.getElementById("submitDisputeBtn");
 
   if (!slNo || !description) {
     alert("Please enter SL No and Description");
     return;
   }
 
-  const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
+  try {
+    btn.disabled = true;
+    setLoading("disputeSubmitStatus", "Submitting dispute...");
+
+    const data = await apiCall({
       action: "submitDispute",
       email: CURRENT_USER,
       agent: agent,
@@ -356,23 +517,27 @@ async function submitDispute() {
       to: to,
       slNo: slNo,
       description: description
-    })
-  });
+    });
 
-  const data = await response.json();
+    if (!data.ok) {
+      alert(data.error);
+      return;
+    }
 
-  if (!data.ok) {
-    alert(data.error);
-    return;
+    alert("Dispute submitted successfully");
+
+    document.getElementById("disputeSlNo").value = "";
+    document.getElementById("disputeDesc").value = "";
+
+    closeDispute();
+    await loadDisputes();
+
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    setLoading("disputeSubmitStatus", "");
   }
-
-  alert("Dispute submitted successfully");
-
-  document.getElementById("disputeSlNo").value = "";
-  document.getElementById("disputeDesc").value = "";
-
-  closeDispute();
-  loadDisputes();
 }
 
 async function loadDisputes() {
@@ -380,24 +545,17 @@ async function loadDisputes() {
   const from = document.getElementById("fromDate").value;
   const to = document.getElementById("toDate").value;
 
-  const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      action: "getDisputes",
-      email: CURRENT_USER,
-      agent: agent,
-      from: from,
-      to: to
-    })
-  });
-
-  const data = await response.json();
-
   const div = document.getElementById("disputes");
   div.style.display = "block";
+  div.innerHTML = "<h2>Dispute Status</h2><p class='loading'>Fetching dispute status...</p>";
+
+  const data = await apiCall({
+    action: "getDisputes",
+    email: CURRENT_USER,
+    agent: agent,
+    from: from,
+    to: to
+  });
 
   if (!data.ok) {
     div.innerHTML = `<h2>Dispute Status</h2><p>${data.error}</p>`;
@@ -421,7 +579,7 @@ async function loadDisputes() {
           <th>SL No</th>
           <th>Description</th>
           <th>Status</th>
-          <th>QA Reply</th>
+          <th>QA Reply / Resolution</th>
         </tr>
       </thead>
       <tbody>
