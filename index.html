@@ -137,6 +137,10 @@
       background: #fff3f3;
     }
 
+    .pending {
+      background: #fff8e1;
+    }
+
     .category-title {
       margin-top: 25px;
       background: #f3e5f5;
@@ -251,6 +255,8 @@
 
   <div class="panel" id="calls" style="display:none;"></div>
 
+  <div class="panel" id="disputeStatusPanel" style="display:none;"></div>
+
 </div>
 
 <div id="disputePopup">
@@ -343,6 +349,8 @@ async function runReport() {
 
     renderSummary(data);
     renderCalls(data.calls || []);
+
+    await loadDisputeStatus(agent, from, to);
 
     status.textContent = "Report generated successfully";
 
@@ -681,8 +689,78 @@ async function submitDispute() {
 
     closeDispute();
 
+    await loadDisputeStatus(agent, from, to);
+
   } catch (err) {
     alert("Error: " + err.message);
+  }
+}
+
+async function loadDisputeStatus(agent, from, to) {
+  const panel = document.getElementById("disputeStatusPanel");
+
+  panel.style.display = "block";
+  panel.innerHTML = "<h2>Dispute Status</h2><p>Loading disputes...</p>";
+
+  try {
+    const url = `${SCRIPT_URL}?listDisputes=1&agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
+
+    const response = await fetch(url);
+    const data = await safeJson(response);
+
+    if (!data.ok) {
+      panel.innerHTML = "<h2>Dispute Status</h2><p>Unable to load disputes.</p>";
+      return;
+    }
+
+    const disputes = data.disputes || [];
+
+    if (!disputes.length) {
+      panel.innerHTML = "<h2>Dispute Status</h2><p>No disputes raised for this period.</p>";
+      return;
+    }
+
+    let html = `
+      <h2>Dispute Status</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Raised Time</th>
+            <th>SL No</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>QA Reply / Clarification</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    disputes.forEach(d => {
+      const resolution = (d.resolution || "").trim();
+      const statusText = resolution ? "✅ Resolved" : "⏳ Pending";
+      const rowClass = resolution ? "good" : "pending";
+
+      html += `
+        <tr class="${rowClass}">
+          <td>${d.timestamp || ""}</td>
+          <td>${d.slNo || ""}</td>
+          <td>${d.description || ""}</td>
+          <td>${statusText}</td>
+          <td>${resolution || "QA reply pending"}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    panel.innerHTML = html;
+
+  } catch (err) {
+    panel.innerHTML = `<h2>Dispute Status</h2><p>Error: ${err.message}</p>`;
   }
 }
 
