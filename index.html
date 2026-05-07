@@ -8,58 +8,98 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <style>
-    body{
-      font-family:Arial;
-      background:#eef4ff;
-      padding:20px;
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef4ff;
+      padding: 20px;
+      color: #111827;
     }
 
-    .card{
-      background:#fff;
-      border-radius:16px;
-      padding:20px;
-      margin-bottom:20px;
-      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    button{
-      background:#1976d2;
-      color:#fff;
-      border:none;
-      padding:12px 20px;
-      border-radius:10px;
-      cursor:pointer;
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
     }
 
-    select,input{
-      padding:10px;
-      width:100%;
-      margin-top:5px;
-      margin-bottom:15px;
+    button:hover {
+      background: #1458a1;
     }
 
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:20px;
+    select, input, textarea {
+      padding: 10px;
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-sizing: border-box;
     }
 
-    table th,table td{
-      border:1px solid #ddd;
-      padding:10px;
-      font-size:13px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
     }
 
-    table th{
-      background:#f3e5f5;
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-size: 13px;
+      vertical-align: top;
     }
 
-    .good{
-      background:#e8f5e9;
+    table th {
+      background: #f3e5f5;
     }
 
-    .bad{
-      background:#ffebee;
+    .good {
+      background: #e8f5e9;
+    }
+
+    .bad {
+      background: #ffebee;
+    }
+
+    .pending {
+      background: #fff8e1;
+    }
+
+    .danger {
+      background: #d32f2f;
+    }
+
+    .danger:hover {
+      background: #a91f1f;
+    }
+
+    #disputePopup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .popup {
+      background: white;
+      width: 380px;
+      max-width: 95%;
+      padding: 22px;
+      border-radius: 14px;
     }
   </style>
 </head>
@@ -71,19 +111,11 @@
 
   <button onclick="login()">Login with Google</button>
 
-  <p>
-    <b>Email:</b>
-    <span id="email">Not logged in</span>
-  </p>
-
-  <p>
-    <b>Role:</b>
-    <span id="role">-</span>
-  </p>
+  <p><b>Email:</b> <span id="email">Not logged in</span></p>
+  <p><b>Role:</b> <span id="role">-</span></p>
 </div>
 
 <div class="card" id="filters" style="display:none;">
-
   <h2>Filters</h2>
 
   <label>Agent</label>
@@ -95,18 +127,29 @@
   <label>To Date</label>
   <input type="date" id="toDate">
 
-  <button onclick="loadReport()">
-    Generate Report
-  </button>
-
+  <button onclick="loadReport()">Generate Report</button>
 </div>
 
 <div class="card" id="summary" style="display:none;"></div>
-
 <div class="card" id="calls" style="display:none;"></div>
+<div class="card" id="disputes" style="display:none;"></div>
+
+<div id="disputePopup">
+  <div class="popup">
+    <h3>Raise Dispute</h3>
+
+    <label>SL No</label>
+    <input type="text" id="disputeSlNo">
+
+    <label>Description</label>
+    <textarea id="disputeDesc" rows="4"></textarea>
+
+    <button onclick="closeDispute()">Cancel</button>
+    <button class="danger" onclick="submitDispute()">Submit</button>
+  </div>
+</div>
 
 <script>
-
 const firebaseConfig = {
   apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
   authDomain: "qa-dashboard-indmoney-2026.firebaseapp.com",
@@ -119,191 +162,127 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-
-const SCRIPT_URL =
-"https://YOUR_APPS_SCRIPT_URL/exec";
+const SCRIPT_URL = "/api";
 
 let CURRENT_USER = null;
 let CURRENT_ROLE = null;
-let CURRENT_AGENT = null;
 
-async function login(){
-
+async function login() {
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  try{
-
+  try {
     const result = await auth.signInWithPopup(provider);
-
     const user = result.user;
 
     CURRENT_USER = user.email;
 
-    document.getElementById("email").innerText =
-      user.email;
+    document.getElementById("email").innerText = user.email;
 
     await validateUser(user.email);
-
-  }catch(err){
-
+  } catch (err) {
     alert(err.message);
-
   }
 }
 
-async function validateUser(email){
-
-  const response = await fetch(SCRIPT_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"login",
-      email:email
+async function validateUser(email) {
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "login",
+      email: email
     })
   });
 
   const data = await response.json();
 
-  console.log(data);
-
-  if(!data.ok){
-
+  if (!data.ok) {
     alert(data.error);
     return;
-
   }
 
   CURRENT_ROLE = data.role;
-  CURRENT_AGENT = data.agent;
 
-  document.getElementById("role").innerText =
-    data.role;
+  document.getElementById("role").innerText = data.role;
+  document.getElementById("filters").style.display = "block";
 
-  document.getElementById("filters").style.display =
-    "block";
-
-  const select =
-    document.getElementById("agentSelect");
-
+  const select = document.getElementById("agentSelect");
   select.innerHTML = "";
 
-  data.agents.forEach(agent=>{
-
+  data.agents.forEach(agent => {
     const option = document.createElement("option");
-
     option.value = agent;
     option.textContent = agent;
-
     select.appendChild(option);
-
   });
 
-  if(data.role !== "admin"){
-
+  if (data.role !== "admin") {
     select.disabled = true;
-
   }
 }
 
-async function loadReport(){
+async function loadReport() {
+  const agent = document.getElementById("agentSelect").value;
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
 
-  const agent =
-    document.getElementById("agentSelect").value;
-
-  const from =
-    document.getElementById("fromDate").value;
-
-  const to =
-    document.getElementById("toDate").value;
-
-  if(!from || !to){
-
-    alert("Select dates");
+  if (!from || !to) {
+    alert("Please select dates");
     return;
-
   }
 
-  const response = await fetch(SCRIPT_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"getReport",
-      email:CURRENT_USER,
-      agent:agent,
-      from:from,
-      to:to
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "getReport",
+      email: CURRENT_USER,
+      agent: agent,
+      from: from,
+      to: to
     })
   });
 
   const data = await response.json();
 
-  console.log(data);
-
-  if(!data.ok){
-
+  if (!data.ok) {
     alert(data.error);
     return;
-
   }
 
   renderSummary(data);
   renderCalls(data.calls);
-
+  loadDisputes();
 }
 
-function renderSummary(data){
-
-  const div =
-    document.getElementById("summary");
-
+function renderSummary(data) {
+  const div = document.getElementById("summary");
   div.style.display = "block";
 
   div.innerHTML = `
-
     <h2>Performance Summary</h2>
-
     <table>
-
-      <tr>
-        <th>Agent</th>
-        <td>${data.agent}</td>
-      </tr>
-
-      <tr>
-        <th>Total Audits</th>
-        <td>${data.totalAudits}</td>
-      </tr>
-
-      <tr>
-        <th>Average Score</th>
-        <td>${data.averageScore}%</td>
-      </tr>
-
-      <tr>
-        <th>Period</th>
-        <td>${data.period}</td>
-      </tr>
-
+      <tr><th>Agent</th><td>${data.agent}</td></tr>
+      <tr><th>Total Audits</th><td>${data.totalAudits}</td></tr>
+      <tr><th>Average Score</th><td>${data.averageScore}%</td></tr>
+      <tr><th>Period</th><td>${data.period}</td></tr>
     </table>
-
   `;
 }
 
-function renderCalls(calls){
-
-  const div =
-    document.getElementById("calls");
-
+function renderCalls(calls) {
+  const div = document.getElementById("calls");
   div.style.display = "block";
 
   let html = `
-
     <h2>Calls</h2>
-
     <table>
-
       <thead>
-
         <tr>
-
           <th>SL No</th>
           <th>Date</th>
           <th>Category</th>
@@ -311,44 +290,156 @@ function renderCalls(calls){
           <th>Audit %</th>
           <th>Status</th>
           <th>Feedback</th>
-
         </tr>
-
       </thead>
-
       <tbody>
-
   `;
 
-  calls.forEach(call=>{
-
-    const good =
-      Number(call.finalScore) >= 22;
+  calls.forEach(call => {
+    const good = Number(call.finalScore) >= 22;
 
     html += `
-
-      <tr class="${good ? 'good':'bad'}">
-
-        <td>${call.slNo}</td>
-
-        <td>${call.callDate}</td>
-
-        <td>${call.queryType}</td>
-
-        <td>${call.finalScore}</td>
-
-        <td>${call.score}%</td>
-
-        <td>
-          ${good ? 'Good':'Issue'}
-        </td>
-
-        <td>${call.feedback}</td>
-
+      <tr class="${good ? 'good' : 'bad'}">
+        <td>${call.slNo || ""}</td>
+        <td>${call.callDate || ""}</td>
+        <td>${call.queryType || ""}</td>
+        <td>${call.finalScore || ""}</td>
+        <td>${call.score || ""}%</td>
+        <td>${good ? "Good" : "Issue"}</td>
+        <td>${call.feedback || ""}</td>
       </tr>
-
     `;
+  });
 
+  html += `
+      </tbody>
+    </table>
+
+    <div style="text-align:right; margin-top:20px;">
+      <button class="danger" onclick="openDispute()">Raise Dispute</button>
+    </div>
+  `;
+
+  div.innerHTML = html;
+}
+
+function openDispute() {
+  document.getElementById("disputePopup").style.display = "flex";
+}
+
+function closeDispute() {
+  document.getElementById("disputePopup").style.display = "none";
+}
+
+async function submitDispute() {
+  const agent = document.getElementById("agentSelect").value;
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
+  const slNo = document.getElementById("disputeSlNo").value.trim();
+  const description = document.getElementById("disputeDesc").value.trim();
+
+  if (!slNo || !description) {
+    alert("Please enter SL No and Description");
+    return;
+  }
+
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "submitDispute",
+      email: CURRENT_USER,
+      agent: agent,
+      from: from,
+      to: to,
+      slNo: slNo,
+      description: description
+    })
+  });
+
+  const data = await response.json();
+
+  if (!data.ok) {
+    alert(data.error);
+    return;
+  }
+
+  alert("Dispute submitted successfully");
+
+  document.getElementById("disputeSlNo").value = "";
+  document.getElementById("disputeDesc").value = "";
+
+  closeDispute();
+  loadDisputes();
+}
+
+async function loadDisputes() {
+  const agent = document.getElementById("agentSelect").value;
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
+
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "getDisputes",
+      email: CURRENT_USER,
+      agent: agent,
+      from: from,
+      to: to
+    })
+  });
+
+  const data = await response.json();
+
+  const div = document.getElementById("disputes");
+  div.style.display = "block";
+
+  if (!data.ok) {
+    div.innerHTML = `<h2>Dispute Status</h2><p>${data.error}</p>`;
+    return;
+  }
+
+  const disputes = data.disputes || [];
+
+  if (!disputes.length) {
+    div.innerHTML = `<h2>Dispute Status</h2><p>No disputes raised for this period.</p>`;
+    return;
+  }
+
+  let html = `
+    <h2>Dispute Status</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Raised Time</th>
+          <th>Agent</th>
+          <th>SL No</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>QA Reply</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  disputes.forEach(d => {
+    const resolved = (d.resolution || "").trim();
+
+    html += `
+      <tr class="${resolved ? 'good' : 'pending'}">
+        <td>${d.timestamp || ""}</td>
+        <td>${d.agent || ""}</td>
+        <td>${d.slNo || ""}</td>
+        <td>${d.description || ""}</td>
+        <td>${resolved ? "Resolved" : "Pending"}</td>
+        <td>${resolved || "QA reply pending"}</td>
+      </tr>
+    `;
   });
 
   html += `
@@ -358,7 +449,6 @@ function renderCalls(calls){
 
   div.innerHTML = html;
 }
-
 </script>
 
 </body>
