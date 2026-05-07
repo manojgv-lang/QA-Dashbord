@@ -7,20 +7,15 @@
 
   <style>
     :root {
-      --bg: #f5f7fb;
-      --border: #e1e5f2;
       --primary: #1976d2;
       --primary-dark: #1458a1;
       --accent: #4caf50;
-      --radius-lg: 14px;
-      --radius-sm: 8px;
+      --border: #e1e5f2;
       --shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.08);
       --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -70,12 +65,15 @@
     }
 
     select,
-    input[type="date"] {
+    input[type="date"],
+    input[type="text"],
+    textarea {
       width: 100%;
       padding: 12px;
       border-radius: 10px;
       border: 1px solid #cbd2e1;
       font-size: 14px;
+      font-family: var(--font-main);
     }
 
     .date-row {
@@ -90,7 +88,7 @@
       padding: 14px;
       border: none;
       border-radius: 999px;
-      background: #1976d2;
+      background: var(--primary);
       color: white;
       font-size: 16px;
       font-weight: bold;
@@ -98,7 +96,12 @@
     }
 
     button:hover {
-      background: #1458a1;
+      background: var(--primary-dark);
+    }
+
+    button:disabled {
+      background: #b7c5d8;
+      cursor: not-allowed;
     }
 
     #status {
@@ -115,7 +118,7 @@
 
     th,
     td {
-      border: 1px solid #ddd;
+      border: 1px solid var(--border);
       padding: 10px;
       font-size: 13px;
       vertical-align: top;
@@ -136,10 +139,61 @@
     .summary-box {
       background: #f1f8e9;
       padding: 15px;
-      border-left: 5px solid #4caf50;
+      border-left: 5px solid var(--accent);
       border-radius: 10px;
       margin-top: 20px;
       white-space: pre-wrap;
+    }
+
+    .dispute-btn {
+      width: auto;
+      padding: 12px 18px;
+      background: #d32f2f;
+    }
+
+    .dispute-btn:hover {
+      background: #a91f1f;
+    }
+
+    #disputePopup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .popup-box {
+      background: white;
+      width: 380px;
+      max-width: 95%;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .popup-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .popup-actions button {
+      width: auto;
+      padding: 10px 16px;
+      margin-top: 0;
+    }
+
+    .cancel-btn {
+      background: #ccc;
+      color: black;
+    }
+
+    .cancel-btn:hover {
+      background: #aaa;
     }
 
     @media(max-width: 700px) {
@@ -167,7 +221,6 @@
     </select>
 
     <div class="date-row">
-
       <div>
         <label>From Date</label>
         <input type="date" id="from">
@@ -177,10 +230,9 @@
         <label>To Date</label>
         <input type="date" id="to">
       </div>
-
     </div>
 
-    <button onclick="runReport()">
+    <button id="runBtn" onclick="runReport()">
       🔍 Generate Report
     </button>
 
@@ -192,6 +244,25 @@
 
   <div class="panel" id="calls" style="display:none;"></div>
 
+</div>
+
+<div id="disputePopup">
+  <div class="popup-box">
+
+    <h3>Raise Dispute</h3>
+
+    <label>SL No</label>
+    <input type="text" id="disputeSlNo" placeholder="Enter SL No">
+
+    <label>Description</label>
+    <textarea id="disputeDesc" rows="4" placeholder="Enter dispute reason"></textarea>
+
+    <div class="popup-actions">
+      <button class="cancel-btn" onclick="closeDispute()">Cancel</button>
+      <button onclick="submitDispute()">Submit</button>
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -209,14 +280,12 @@ async function safeJson(res) {
 }
 
 async function init() {
-
   const agentSelect = document.getElementById("agent");
   const status = document.getElementById("status");
 
   status.textContent = "Loading agents...";
 
   try {
-
     const response = await fetch(`${SCRIPT_URL}?listAgents=1`);
     const data = await safeJson(response);
 
@@ -228,85 +297,65 @@ async function init() {
     agentSelect.innerHTML = `<option value="">Select Agent</option>`;
 
     data.agents.forEach(agent => {
-
       const option = document.createElement("option");
-
       option.value = agent;
       option.textContent = agent;
-
       agentSelect.appendChild(option);
-
     });
 
     status.textContent = "Agents loaded successfully";
 
   } catch (err) {
-
     status.textContent = "Error: " + err.message;
-
   }
-
 }
 
 async function runReport() {
-
   const agent = document.getElementById("agent").value;
   const from = document.getElementById("from").value;
   const to = document.getElementById("to").value;
-
   const status = document.getElementById("status");
+  const btn = document.getElementById("runBtn");
 
   if (!agent || !from || !to) {
-
-    status.textContent = "Please select all fields";
+    status.textContent = "Please select Agent, From Date and To Date";
     return;
-
   }
 
   status.textContent = "Generating report...";
+  btn.disabled = true;
 
   try {
-
-    const url =
-      `${SCRIPT_URL}?agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
-
+    const url = `${SCRIPT_URL}?agent=${encodeURIComponent(agent)}&from=${from}&to=${to}`;
     const response = await fetch(url);
-
     const data = await safeJson(response);
 
     if (!data.ok) {
-
       status.textContent = data.error || "No data found";
+      btn.disabled = false;
       return;
-
     }
 
     renderSummary(data);
-
     renderCalls(data.calls || []);
 
     status.textContent = "Report generated successfully";
 
   } catch (err) {
-
     status.textContent = "Error: " + err.message;
-
   }
 
+  btn.disabled = false;
 }
 
 function renderSummary(data) {
-
   const div = document.getElementById("summary");
-
   div.style.display = "block";
 
   div.innerHTML = `
-
     <h2>Performance Summary</h2>
 
     <table>
-
       <tr>
         <th>Agent</th>
         <td>${data.agent}</td>
@@ -326,34 +375,24 @@ function renderSummary(data) {
         <th>Period</th>
         <td>${data.period}</td>
       </tr>
-
     </table>
-
   `;
-
 }
 
 function renderCalls(calls) {
-
   const div = document.getElementById("calls");
-
   div.style.display = "block";
 
   if (!calls.length) {
-
     div.innerHTML = "<h2>No Calls Found</h2>";
     return;
-
   }
 
   let html = `
-
     <h2>Call Breakdown</h2>
 
     <table>
-
       <thead>
-
         <tr>
           <th>SL No</th>
           <th>Date</th>
@@ -362,21 +401,16 @@ function renderCalls(calls) {
           <th>Status</th>
           <th>Feedback</th>
         </tr>
-
       </thead>
-
       <tbody>
-
   `;
 
   let good = 0;
   let bad = 0;
 
   calls.forEach(call => {
-
     const score = Number(call.score || 0);
-
-    const status = score >= 90 ? "✅ Good" : "❌ Issue";
+    const callStatus = score >= 90 ? "✅ Good" : "❌ Issue";
 
     if (score >= 90) {
       good++;
@@ -385,36 +419,22 @@ function renderCalls(calls) {
     }
 
     html += `
-
       <tr class="${score >= 90 ? 'good' : 'bad'}">
-
         <td>${call.slNo || ""}</td>
-
         <td>${call.callDate || ""}</td>
-
         <td>${call.queryType || ""}</td>
-
         <td>${score}%</td>
-
-        <td>${status}</td>
-
+        <td>${callStatus}</td>
         <td>${call.feedback || ""}</td>
-
       </tr>
-
     `;
-
   });
 
   html += `
       </tbody>
     </table>
-  `;
-
-  html += `
 
     <div class="summary-box">
-
 📈 OVERALL SUMMARY
 
 ✅ Good Calls: ${good}
@@ -425,13 +445,79 @@ function renderCalls(calls) {
 ${bad > good
   ? "Focus on process adherence and communication quality."
   : "Good performance. Maintain the same quality."}
-
     </div>
 
+    <div style="margin-top:20px; text-align:right;">
+      <button class="dispute-btn" onclick="openDispute()">
+        🚩 Raise Dispute
+      </button>
+    </div>
   `;
 
   div.innerHTML = html;
+}
 
+function openDispute() {
+  document.getElementById("disputePopup").style.display = "flex";
+}
+
+function closeDispute() {
+  document.getElementById("disputePopup").style.display = "none";
+}
+
+async function submitDispute() {
+  const slNo = document.getElementById("disputeSlNo").value.trim();
+  const description = document.getElementById("disputeDesc").value.trim();
+
+  const agent = document.getElementById("agent").value;
+  const from = document.getElementById("from").value;
+  const to = document.getElementById("to").value;
+
+  if (!slNo || !description) {
+    alert("Please enter SL No and Description");
+    return;
+  }
+
+  if (!agent || !from || !to) {
+    alert("Please select Agent, From Date and To Date");
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams();
+
+    params.append("action", "dispute");
+    params.append("agent", agent);
+    params.append("slNo", slNo);
+    params.append("description", description);
+    params.append("from", from);
+    params.append("to", to);
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+      },
+      body: params.toString()
+    });
+
+    const data = await safeJson(response);
+
+    if (!data.ok) {
+      alert("Failed to submit dispute: " + (data.error || "Unknown error"));
+      return;
+    }
+
+    alert("Dispute submitted successfully");
+
+    document.getElementById("disputeSlNo").value = "";
+    document.getElementById("disputeDesc").value = "";
+
+    closeDispute();
+
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
 }
 
 window.addEventListener("load", init);
