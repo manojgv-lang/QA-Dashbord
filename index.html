@@ -434,8 +434,9 @@ function cleanPoint(text) {
   return text
     .replace(/\n/g, " ")
     .replace(/\s+/g, " ")
-    .replace(/^[-–•\s]+/, "")
+    .replace(/^[-–•:,\s]+/, "")
     .replace(/na$/i, "")
+    .replace(/^and\s+/i, "")
     .trim();
 }
 
@@ -447,10 +448,26 @@ function normalizePoint(text) {
     .trim();
 }
 
+function isBadSummaryHeader(point) {
+  const p = normalizePoint(point);
+
+  const blocked = [
+    "uninformed pointers and red flagged issues",
+    "uninformed pointers",
+    "red flagged issues",
+    "missed pitch points",
+    "missed pitch points uninformed pointers and red flagged issues",
+    "missed pitch points uninformed pointers red flagged issues"
+  ];
+
+  return blocked.some(b => p === b || p.includes(b));
+}
+
 function addUnique(list, point) {
   const cleaned = cleanPoint(point);
 
   if (!cleaned || cleaned.length < 8) return;
+  if (isBadSummaryHeader(cleaned)) return;
 
   const normalized = normalizePoint(cleaned);
 
@@ -468,14 +485,16 @@ function addUnique(list, point) {
 
 function splitFeedbackSections(feedback) {
   const text = feedback || "";
-
   const lower = text.toLowerCase();
 
   let goodPractice = "";
   let improvement = "";
 
   const goodIndex = lower.indexOf("good practice");
-  const missedIndex = lower.indexOf("missed pitch points");
+  const missedFullIndex = lower.indexOf("missed pitch points, uninformed pointers, and red-flagged issues");
+  const missedShortIndex = lower.indexOf("missed pitch points");
+
+  const missedIndex = missedFullIndex !== -1 ? missedFullIndex : missedShortIndex;
 
   if (goodIndex !== -1) {
     const start = goodIndex + "good practice".length;
@@ -484,8 +503,13 @@ function splitFeedbackSections(feedback) {
   }
 
   if (missedIndex !== -1) {
-    const start = missedIndex + "missed pitch points".length;
-    improvement = text.substring(start);
+    if (missedFullIndex !== -1) {
+      const header = "missed pitch points, uninformed pointers, and red-flagged issues";
+      improvement = text.substring(missedFullIndex + header.length);
+    } else {
+      const header = "missed pitch points";
+      improvement = text.substring(missedShortIndex + header.length);
+    }
   }
 
   return {
@@ -500,7 +524,8 @@ function extractPoints(sectionText) {
   return sectionText
     .split(/[-•\n]+/)
     .map(p => cleanPoint(p))
-    .filter(p => p && p.length > 8 && p.toLowerCase() !== "na");
+    .filter(p => p && p.length > 8 && p.toLowerCase() !== "na")
+    .filter(p => !isBadSummaryHeader(p));
 }
 
 function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
@@ -546,8 +571,8 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
     <p>
       The audit feedback has been consolidated from all reviewed calls for the selected period.
       Strengths are captured from the Good Practice remarks, while improvement areas are captured
-      from missed pitch points, uninformed pointers, and red-flagged issues. Repeated points have
-      been removed to keep the summary clean and actionable.
+      from missed pitch points, uninformed pointers, and red-flagged issues. Repeated and generic
+      header points have been removed to keep the summary clean and actionable.
     </p>
 
     <h3>💡 Actionable Suggestions</h3>
