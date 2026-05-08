@@ -95,8 +95,18 @@
       border-radius: 10px;
       padding: 18px;
       margin-top: 22px;
-      white-space: pre-wrap;
       line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .summary-box h2,
+    .summary-box h3 {
+      margin-bottom: 8px;
+    }
+
+    .summary-box ul {
+      margin-top: 6px;
+      margin-bottom: 14px;
     }
 
     .category-title {
@@ -407,7 +417,7 @@ function renderCalls(calls) {
 
   html += `
     <div class="summary-box">
-${buildFeedbackSummary(feedbackTexts, good, bad, calls.length)}
+      ${buildFeedbackSummary(feedbackTexts, good, bad, calls.length)}
     </div>
 
     <div style="text-align:right; margin-top:20px;">
@@ -419,65 +429,84 @@ ${buildFeedbackSummary(feedbackTexts, good, bad, calls.length)}
 }
 
 function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
-  let text = "";
-
-  text += `📈 OVERALL SUMMARY\n\n`;
-  text += `Total Calls Checked: ${totalCalls}\n`;
-  text += `✅ Good Calls: ${good}\n`;
-  text += `❌ Bad Calls: ${bad}\n\n`;
-
-  if (!feedbackTexts.length) {
-    text += `💡 SUGGESTION:\nNo feedback text found.`;
-    return text;
-  }
-
   const feedback = feedbackTexts.join(" ").toLowerCase();
 
-  text += `🔍 MAIN OBSERVATIONS FROM FEEDBACK:\n\n`;
+  let strengths = [];
+  let gaps = [];
+
+  if (feedback.includes("clear") || feedback.includes("explained") || feedback.includes("informed")) {
+    strengths.push("The agent provided clear explanations and shared relevant information with the customer.");
+  }
+
+  if (feedback.includes("assisted") || feedback.includes("addressed")) {
+    strengths.push("The agent assisted the customer and addressed most queries appropriately.");
+  }
+
+  if (feedback.includes("empathetic") || feedback.includes("empathy")) {
+    strengths.push("The agent maintained empathy and customer-friendly communication in several interactions.");
+  }
+
+  if (feedback.includes("pitch") || feedback.includes("missed pitch") || feedback.includes("could not pitch")) {
+    gaps.push("Pitching needs improvement, especially where mandatory or feedback-related pitch points were missed.");
+  }
 
   if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
-    text += `1. Process Knowledge / SOP Gap\n`;
+    gaps.push("Process and SOP understanding should be strengthened to avoid incomplete or incorrect information.");
   }
 
-  if (feedback.includes("pitch") || feedback.includes("explain") || feedback.includes("missed")) {
-    text += `2. Pitching / Explanation Gap\n`;
+  if (feedback.includes("communication") || feedback.includes("tone") || feedback.includes("empathy")) {
+    gaps.push("Communication quality should remain consistent across all calls.");
   }
 
-  if (feedback.includes("tone") || feedback.includes("empathy")) {
-    text += `3. Tone / Empathy Gap\n`;
+  if (feedback.includes("probe") || feedback.includes("probing")) {
+    gaps.push("Probing needs improvement to understand the customer concern completely before responding.");
   }
 
-  if (feedback.includes("verification") || feedback.includes("mandatory")) {
-    text += `4. Verification / Mandatory Check Missed\n`;
+  strengths = [...new Set(strengths)];
+  gaps = [...new Set(gaps)];
+
+  if (!strengths.length) {
+    strengths.push("The agent handled the audited calls with acceptable overall performance.");
   }
 
-  text += `\n📝 SUMMARY AND FEEDBACK:\n\n`;
-
-  feedbackTexts.slice(0, 5).forEach((f, i) => {
-    text += `${i + 1}. ${f}\n\n`;
-  });
-
-  text += `💡 ACTIONABLE SUGGESTIONS:\n\n`;
-
-  if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
-    text += `• Agent should revise SOP/process flow and avoid incomplete or incorrect information.\n`;
+  if (!gaps.length) {
+    gaps.push("No major repeated gap was observed, but continued monitoring is recommended.");
   }
 
-  if (feedback.includes("pitch") || feedback.includes("explain") || feedback.includes("missed")) {
-    text += `• Agent should improve explanation quality and cover mandatory points clearly.\n`;
-  }
+  return `
+    <h2>📌 Consolidated Audit Summary</h2>
 
-  if (feedback.includes("tone") || feedback.includes("empathy")) {
-    text += `• Agent should work on tone, empathy, and customer-friendly communication.\n`;
-  }
+    <p><b>Total Calls Checked:</b> ${totalCalls}</p>
+    <p><b>Good Calls:</b> ${good}</p>
+    <p><b>Bad Calls:</b> ${bad}</p>
 
-  if (bad > good) {
-    text += `• Since bad calls are high, focused coaching with sample call reviews is required.\n`;
-  } else {
-    text += `• Overall performance is acceptable, but repeated feedback areas should be monitored.\n`;
-  }
+    <h3>✅ Key Strengths</h3>
+    <ul>
+      ${strengths.slice(0, 3).map(s => `<li>${s}</li>`).join("")}
+    </ul>
 
-  return text;
+    <h3>⚠️ Major Improvement Areas</h3>
+    <ul>
+      ${gaps.slice(0, 3).map(g => `<li>${g}</li>`).join("")}
+    </ul>
+
+    <h3>📝 Brief Summary and Feedback</h3>
+    <p>
+      Overall performance is ${bad === 0 ? "strong" : "satisfactory"} for the selected period.
+      The agent has shown good customer handling and query support in most calls.
+      However, the main improvement areas are around structured pitching, process adherence,
+      and consistent communication quality. Focused coaching on repeated gaps can help improve
+      future audit performance.
+    </p>
+
+    <h3>💡 Actionable Suggestions</h3>
+    <ul>
+      <li>Follow a structured explanation flow for every process-related query.</li>
+      <li>Ensure all mandatory pitch points are completed before call closure.</li>
+      <li>Improve probing and avoid incomplete responses.</li>
+      <li>Maintain clear, polite, and consistent communication throughout the call.</li>
+    </ul>
+  `;
 }
 
 function openDispute() {
