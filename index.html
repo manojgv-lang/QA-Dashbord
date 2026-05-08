@@ -428,49 +428,101 @@ function renderCalls(calls) {
   div.innerHTML = html;
 }
 
+function cleanPoint(text) {
+  if (!text) return "";
+
+  return text
+    .replace(/\n/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^[-–•\s]+/, "")
+    .replace(/na$/i, "")
+    .trim();
+}
+
+function normalizePoint(text) {
+  return cleanPoint(text)
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function addUnique(list, point) {
+  const cleaned = cleanPoint(point);
+
+  if (!cleaned || cleaned.length < 8) return;
+
+  const normalized = normalizePoint(cleaned);
+
+  const exists = list.some(item => {
+    const existing = normalizePoint(item);
+    return existing === normalized ||
+           existing.includes(normalized) ||
+           normalized.includes(existing);
+  });
+
+  if (!exists) {
+    list.push(cleaned);
+  }
+}
+
+function splitFeedbackSections(feedback) {
+  const text = feedback || "";
+
+  const lower = text.toLowerCase();
+
+  let goodPractice = "";
+  let improvement = "";
+
+  const goodIndex = lower.indexOf("good practice");
+  const missedIndex = lower.indexOf("missed pitch points");
+
+  if (goodIndex !== -1) {
+    const start = goodIndex + "good practice".length;
+    const end = missedIndex !== -1 && missedIndex > goodIndex ? missedIndex : text.length;
+    goodPractice = text.substring(start, end);
+  }
+
+  if (missedIndex !== -1) {
+    const start = missedIndex + "missed pitch points".length;
+    improvement = text.substring(start);
+  }
+
+  return {
+    goodPractice: goodPractice,
+    improvement: improvement
+  };
+}
+
+function extractPoints(sectionText) {
+  if (!sectionText) return [];
+
+  return sectionText
+    .split(/[-•\n]+/)
+    .map(p => cleanPoint(p))
+    .filter(p => p && p.length > 8 && p.toLowerCase() !== "na");
+}
+
 function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
-  const feedback = feedbackTexts.join(" ").toLowerCase();
-
   let strengths = [];
-  let gaps = [];
+  let improvementAreas = [];
 
-  if (feedback.includes("clear") || feedback.includes("explained") || feedback.includes("informed")) {
-    strengths.push("The agent provided clear explanations and shared relevant information with the customer.");
-  }
+  feedbackTexts.forEach(feedback => {
+    const sections = splitFeedbackSections(feedback);
 
-  if (feedback.includes("assisted") || feedback.includes("addressed")) {
-    strengths.push("The agent assisted the customer and addressed most queries appropriately.");
-  }
+    const goodPoints = extractPoints(sections.goodPractice);
+    const improvementPoints = extractPoints(sections.improvement);
 
-  if (feedback.includes("empathetic") || feedback.includes("empathy")) {
-    strengths.push("The agent maintained empathy and customer-friendly communication in several interactions.");
-  }
-
-  if (feedback.includes("pitch") || feedback.includes("missed pitch") || feedback.includes("could not pitch")) {
-    gaps.push("Pitching needs improvement, especially where mandatory or feedback-related pitch points were missed.");
-  }
-
-  if (feedback.includes("process") || feedback.includes("sop") || feedback.includes("incorrect") || feedback.includes("wrong")) {
-    gaps.push("Process and SOP understanding should be strengthened to avoid incomplete or incorrect information.");
-  }
-
-  if (feedback.includes("communication") || feedback.includes("tone") || feedback.includes("empathy")) {
-    gaps.push("Communication quality should remain consistent across all calls.");
-  }
-
-  if (feedback.includes("probe") || feedback.includes("probing")) {
-    gaps.push("Probing needs improvement to understand the customer concern completely before responding.");
-  }
-
-  strengths = [...new Set(strengths)];
-  gaps = [...new Set(gaps)];
+    goodPoints.forEach(point => addUnique(strengths, point));
+    improvementPoints.forEach(point => addUnique(improvementAreas, point));
+  });
 
   if (!strengths.length) {
-    strengths.push("The agent handled the audited calls with acceptable overall performance.");
+    strengths.push("The agent handled the audited calls with acceptable overall customer support.");
   }
 
-  if (!gaps.length) {
-    gaps.push("No major repeated gap was observed, but continued monitoring is recommended.");
+  if (!improvementAreas.length) {
+    improvementAreas.push("No major repeated improvement area was observed for the selected period.");
   }
 
   return `
@@ -482,29 +534,28 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
 
     <h3>✅ Key Strengths</h3>
     <ul>
-      ${strengths.slice(0, 3).map(s => `<li>${s}</li>`).join("")}
+      ${strengths.slice(0, 5).map(s => `<li>${s}</li>`).join("")}
     </ul>
 
     <h3>⚠️ Major Improvement Areas</h3>
     <ul>
-      ${gaps.slice(0, 3).map(g => `<li>${g}</li>`).join("")}
+      ${improvementAreas.slice(0, 6).map(g => `<li>${g}</li>`).join("")}
     </ul>
 
     <h3>📝 Brief Summary and Feedback</h3>
     <p>
-      Overall performance is ${bad === 0 ? "strong" : "satisfactory"} for the selected period.
-      The agent has shown good customer handling and query support in most calls.
-      However, the main improvement areas are around structured pitching, process adherence,
-      and consistent communication quality. Focused coaching on repeated gaps can help improve
-      future audit performance.
+      The audit feedback has been consolidated from all reviewed calls for the selected period.
+      Strengths are captured from the Good Practice remarks, while improvement areas are captured
+      from missed pitch points, uninformed pointers, and red-flagged issues. Repeated points have
+      been removed to keep the summary clean and actionable.
     </p>
 
     <h3>💡 Actionable Suggestions</h3>
     <ul>
-      <li>Follow a structured explanation flow for every process-related query.</li>
-      <li>Ensure all mandatory pitch points are completed before call closure.</li>
-      <li>Improve probing and avoid incomplete responses.</li>
-      <li>Maintain clear, polite, and consistent communication throughout the call.</li>
+      <li>Continue the positive behaviours highlighted under Key Strengths.</li>
+      <li>Focus coaching on the listed Major Improvement Areas.</li>
+      <li>Ensure mandatory pitch points and process explanations are completed before call closure.</li>
+      <li>Review sample calls with repeated gaps to improve consistency.</li>
     </ul>
   `;
 }
