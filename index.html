@@ -35,14 +35,8 @@
       margin-top: 8px;
     }
 
-    button:hover {
-      background: #1458a1;
-    }
-
-    button:disabled {
-      background: #9ca3af;
-      cursor: not-allowed;
-    }
+    button:hover { background: #1458a1; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
 
     select, input, textarea {
       padding: 10px;
@@ -52,6 +46,12 @@
       border: 1px solid #cbd5e1;
       border-radius: 8px;
       box-sizing: border-box;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
 
     table {
@@ -69,27 +69,14 @@
 
     th {
       background: #f3e5f5;
+      font-weight: bold;
     }
 
-    .good {
-      background: #e8f5e9;
-    }
-
-    .bad {
-      background: #ffebee;
-    }
-
-    .pending {
-      background: #fff8e1;
-    }
-
-    .danger {
-      background: #d32f2f;
-    }
-
-    .danger:hover {
-      background: #a91f1f;
-    }
+    .good { background: #e8f5e9; }
+    .bad { background: #ffebee; }
+    .pending { background: #fff8e1; }
+    .danger { background: #d32f2f; }
+    .danger:hover { background: #a91f1f; }
 
     .summary-box {
       background: #f1f8e9;
@@ -115,30 +102,31 @@
       margin-top: 12px;
     }
 
-    .bar-row {
-      margin: 10px 0;
+    .copy-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px;
+      white-space: pre-wrap;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: 14px;
     }
 
-    .bar-label {
+    .mini-table th,
+    .mini-table td {
+      font-size: 14px;
+      padding: 8px;
+    }
+
+    .chart-table {
+      max-width: 700px;
+    }
+
+    .chart-count {
       font-weight: bold;
-      margin-bottom: 4px;
-    }
-
-    .bar-track {
-      background: #e5e7eb;
-      border-radius: 999px;
-      overflow: hidden;
-      height: 22px;
-    }
-
-    .bar-fill {
-      background: #1976d2;
-      color: white;
-      height: 22px;
-      line-height: 22px;
-      padding-left: 8px;
-      font-size: 12px;
-      white-space: nowrap;
+      text-align: center;
     }
 
     #disputePopup {
@@ -165,9 +153,7 @@
       text-decoration: none;
     }
 
-    a:hover {
-      text-decoration: underline;
-    }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 
@@ -182,21 +168,42 @@
 </div>
 
 <div class="card" id="filters" style="display:none;">
-  <h2>Filters</h2>
+  <h2>Agent Report Filters</h2>
 
   <label>Agent</label>
   <select id="agentSelect"></select>
 
-  <label>From Date</label>
-  <input type="date" id="fromDate">
-
-  <label>To Date</label>
-  <input type="date" id="toDate">
+  <div class="grid-2">
+    <div>
+      <label>From Date</label>
+      <input type="date" id="fromDate">
+    </div>
+    <div>
+      <label>To Date</label>
+      <input type="date" id="toDate">
+    </div>
+  </div>
 
   <button id="reportBtn" onclick="loadReport()">Generate Agent Report</button>
-  <button id="allAgentBtn" onclick="loadAllAgentSummary()" style="display:none;">Generate All-Agent Summary</button>
-
   <p id="reportStatus" class="loading"></p>
+</div>
+
+<div class="card" id="adminFilters" style="display:none;">
+  <h2>Admin All-Agent Summary Filters</h2>
+
+  <div class="grid-2">
+    <div>
+      <label>All-Agent From Date</label>
+      <input type="date" id="allFromDate">
+    </div>
+    <div>
+      <label>All-Agent To Date</label>
+      <input type="date" id="allToDate">
+    </div>
+  </div>
+
+  <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
+  <p id="allAgentStatus" class="loading"></p>
 </div>
 
 <div class="card" id="summary" style="display:none;"></div>
@@ -246,13 +253,17 @@ function setLoading(id, text) {
 async function apiCall(payload) {
   const response = await fetch(SCRIPT_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 
   return await response.json();
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text);
+  alert("Copied successfully");
 }
 
 async function login() {
@@ -310,7 +321,7 @@ async function validateUser(email) {
   select.disabled = data.role !== "admin";
 
   if (data.role === "admin") {
-    document.getElementById("allAgentBtn").style.display = "inline-block";
+    document.getElementById("adminFilters").style.display = "block";
   }
 }
 
@@ -321,13 +332,13 @@ async function loadReport() {
   const btn = document.getElementById("reportBtn");
 
   if (!from || !to) {
-    alert("Please select dates");
+    alert("Please select agent report dates");
     return;
   }
 
   try {
     btn.disabled = true;
-    setLoading("reportStatus", "Fetching report data...");
+    setLoading("reportStatus", "Fetching agent report data...");
 
     document.getElementById("allAgentSummary").style.display = "none";
 
@@ -348,7 +359,7 @@ async function loadReport() {
     renderCalls(data.calls);
     await loadDisputes();
 
-    setLoading("reportStatus", "Report loaded successfully.");
+    setLoading("reportStatus", "Agent report loaded successfully.");
   } catch (err) {
     alert(err.message);
   } finally {
@@ -357,18 +368,18 @@ async function loadReport() {
 }
 
 async function loadAllAgentSummary() {
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
+  const from = document.getElementById("allFromDate").value;
+  const to = document.getElementById("allToDate").value;
   const btn = document.getElementById("allAgentBtn");
 
   if (!from || !to) {
-    alert("Please select dates");
+    alert("Please select all-agent summary dates");
     return;
   }
 
   try {
     btn.disabled = true;
-    setLoading("reportStatus", "Fetching all-agent summary...");
+    setLoading("allAgentStatus", "Fetching all-agent summary...");
 
     document.getElementById("summary").style.display = "none";
     document.getElementById("calls").style.display = "none";
@@ -386,8 +397,8 @@ async function loadAllAgentSummary() {
       return;
     }
 
-    renderAllAgentSummary(data.summary || []);
-    setLoading("reportStatus", "All-agent summary loaded successfully.");
+    renderAllAgentSummary(data.summary || [], from, to);
+    setLoading("allAgentStatus", "All-agent summary loaded successfully.");
   } catch (err) {
     alert(err.message);
   } finally {
@@ -410,7 +421,7 @@ function renderSummary(data) {
   `;
 }
 
-function renderAllAgentSummary(rows) {
+function renderAllAgentSummary(rows, from, to) {
   const div = document.getElementById("allAgentSummary");
   div.style.display = "block";
 
@@ -419,8 +430,14 @@ function renderAllAgentSummary(rows) {
     return;
   }
 
+  let copyText = `All-Agent QA Summary\\nPeriod: ${from} to ${to}\\n\\n`;
+  copyText += `Agent Name\\tTotal Calls Audited\\tAverage %\\tCategory-wise Calls\\n`;
+
   let html = `
     <h2>All-Agent Summary</h2>
+    <p><b>Period:</b> ${from} to ${to}</p>
+    <button onclick="copyText('allAgentCopy')">Copy Email/Sheet Format</button>
+
     <table>
       <thead>
         <tr>
@@ -439,6 +456,13 @@ function renderAllAgentSummary(rows) {
       .map(cat => `${cat}: ${row.categories[cat]}`)
       .join("<br>");
 
+    const categoryCopy = Object.keys(row.categories || {})
+      .sort()
+      .map(cat => `${cat}: ${row.categories[cat]}`)
+      .join(", ");
+
+    copyText += `${row.agent}\\t${row.totalCalls}\\t${row.averageScore}%\\t${categoryCopy}\\n`;
+
     html += `
       <tr>
         <td>${row.agent}</td>
@@ -452,6 +476,9 @@ function renderAllAgentSummary(rows) {
   html += `
       </tbody>
     </table>
+
+    <h3>Copy/Paste Format</h3>
+    <div class="copy-box" id="allAgentCopy">${copyText}</div>
   `;
 
   div.innerHTML = html;
@@ -480,14 +507,14 @@ function renderCalls(calls) {
   });
 
   let html = `
-    <h2>Call Category Chart</h2>
-    ${buildCategoryChart(grouped)}
+    <h2>Category-wise Call Summary</h2>
+    ${buildCategorySummary(grouped)}
 
     <h2>Call Breakdown</h2>
     <p><b>Total Calls Showing:</b> ${calls.length}</p>
   `;
 
-  Object.keys(grouped).forEach(category => {
+  Object.keys(grouped).sort().forEach(category => {
     html += `
       <div class="category-title">${category} - ${grouped[category].length} calls</div>
 
@@ -547,25 +574,33 @@ function renderCalls(calls) {
   div.innerHTML = html;
 }
 
-function buildCategoryChart(grouped) {
-  const categories = Object.keys(grouped);
-  const max = Math.max(...categories.map(cat => grouped[cat].length));
+function buildCategorySummary(grouped) {
+  const categories = Object.keys(grouped).sort();
 
-  let html = "";
+  let html = `
+    <table class="mini-table chart-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Call Count</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
 
   categories.forEach(cat => {
-    const count = grouped[cat].length;
-    const percent = max > 0 ? Math.max((count / max) * 100, 8) : 0;
-
     html += `
-      <div class="bar-row">
-        <div class="bar-label">${cat}: ${count}</div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width:${percent}%">${count}</div>
-        </div>
-      </div>
+      <tr>
+        <td>${cat}</td>
+        <td class="chart-count">${grouped[cat].length}</td>
+      </tr>
     `;
   });
+
+  html += `
+      </tbody>
+    </table>
+  `;
 
   return html;
 }
@@ -654,10 +689,7 @@ function splitFeedbackSections(feedback) {
     }
   }
 
-  return {
-    goodPractice: goodPractice,
-    improvement: improvement
-  };
+  return { goodPractice, improvement };
 }
 
 function extractPoints(sectionText) {
@@ -677,11 +709,8 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
   feedbackTexts.forEach(feedback => {
     const sections = splitFeedbackSections(feedback);
 
-    const goodPoints = extractPoints(sections.goodPractice);
-    const improvementPoints = extractPoints(sections.improvement);
-
-    goodPoints.forEach(point => addUnique(strengths, point));
-    improvementPoints.forEach(point => addUnique(improvementAreas, point));
+    extractPoints(sections.goodPractice).forEach(point => addUnique(strengths, point));
+    extractPoints(sections.improvement).forEach(point => addUnique(improvementAreas, point));
   });
 
   if (!strengths.length) {
@@ -798,7 +827,6 @@ async function loadDisputes() {
 
   let html = `
     <h2>Dispute Status</h2>
-
     <table>
       <thead>
         <tr>
