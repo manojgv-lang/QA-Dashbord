@@ -8,206 +8,44 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #eef4ff;
-      padding: 20px;
-      color: #111827;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    button {
-      background: #1976d2;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-right: 8px;
-      margin-top: 8px;
-    }
-
-    button:hover { background: #1458a1; }
-    button:disabled { background: #9ca3af; cursor: not-allowed; }
-
-    .green-btn { background: #0f9d58; }
-    .green-btn:hover { background: #0b7d45; }
-
-    .danger { background: #d32f2f; }
-    .danger:hover { background: #a91f1f; }
-
-    select, input, textarea {
-      padding: 10px;
-      width: 100%;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      box-sizing: border-box;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      font-size: 13px;
-      vertical-align: top;
-    }
-
-    th {
-      background: #f3e5f5;
-      font-weight: bold;
-    }
-
-    .good { background: #e8f5e9; }
-    .bad { background: #ffebee; }
-    .pending { background: #fff8e1; }
-
-    .summary-box {
-      background: #f1f8e9;
-      border-left: 5px solid #4caf50;
-      border-radius: 10px;
-      padding: 18px;
-      margin-top: 22px;
-      line-height: 1.6;
-      font-size: 15px;
-    }
-
-    .category-title {
-      margin-top: 24px;
-      background: #f3e5f5;
-      padding: 10px;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    .loading {
-      color: #1976d2;
-      font-weight: bold;
-      margin-top: 12px;
-    }
-
-    .all-agent-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 8px;
-      margin-top: 18px;
-    }
-
-    .all-agent-table th {
-      background: #e8eefc;
-      color: #111827;
-      font-size: 14px;
-      padding: 12px;
-      text-align: center;
-      border: none;
-    }
-
-    .all-agent-table td {
-      background: #ffffff;
-      border-top: 1px solid #dbe3f0;
-      border-bottom: 1px solid #dbe3f0;
-      padding: 14px;
-      font-size: 14px;
-      vertical-align: middle;
-    }
-
-    .agent-name-cell { font-weight: bold; width: 22%; }
-    .number-cell { text-align: center; font-weight: bold; width: 12%; }
-    .score-good { color: #0f7b35; font-weight: bold; text-align: center; }
-    .score-bad { color: #b91c1c; font-weight: bold; text-align: center; }
-    .details-cell { text-align: center; }
-
-    .details-btn {
-      background: #2563eb;
-      color: white;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin: 0;
-    }
-
-    .category-detail-row td {
-      background: #f8fafc !important;
-      border: 1px solid #dbe3f0 !important;
-      border-radius: 12px !important;
-      padding: 16px !important;
-    }
-
-    .category-detail-box {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      background: #f8fafc;
-    }
-
-    .category-item {
-      background: white;
-      border: 1px solid #dbe3f0;
-      border-radius: 10px;
-      padding: 10px 12px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 13px;
-    }
-
-    .mini-table { max-width: 700px; }
-    .chart-count { font-weight: bold; text-align: center; }
-
-    #disputePopup {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .popup {
-      background: white;
-      width: 380px;
-      max-width: 95%;
-      padding: 22px;
-      border-radius: 14px;
-    }
-
-    a {
-      color: #1976d2;
-      font-weight: bold;
-      text-decoration: none;
-    }
-
-    a:hover { text-decoration: underline; }
-
-    @media(max-width: 900px) {
-      .category-detail-box { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media(max-width: 600px) {
-      .grid-2 { grid-template-columns: 1fr; }
-      .category-detail-box { grid-template-columns: 1fr; }
-    }
+    body { font-family: Arial, sans-serif; background:#eef4ff; padding:20px; color:#111827; }
+    .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+    button { background:#1976d2; color:#fff; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; font-weight:bold; margin-right:8px; margin-top:8px; }
+    button:hover { background:#1458a1; }
+    button:disabled { background:#9ca3af; cursor:not-allowed; }
+    .green-btn { background:#0f9d58; }
+    .green-btn:hover { background:#0b7d45; }
+    .danger { background:#d32f2f; }
+    .danger:hover { background:#a91f1f; }
+    select, input, textarea { padding:10px; width:100%; margin-top:5px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:8px; box-sizing:border-box; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #ddd; padding:10px; font-size:13px; vertical-align:top; }
+    th { background:#f3e5f5; font-weight:bold; }
+    .good { background:#e8f5e9; }
+    .bad { background:#ffebee; }
+    .pending { background:#fff8e1; }
+    .summary-box { background:#f1f8e9; border-left:5px solid #4caf50; border-radius:10px; padding:18px; margin-top:22px; line-height:1.6; font-size:15px; }
+    .category-title { margin-top:24px; background:#f3e5f5; padding:10px; border-radius:8px; font-weight:bold; }
+    .loading { color:#1976d2; font-weight:bold; margin-top:12px; }
+    .all-agent-table { width:100%; border-collapse:separate; border-spacing:0 8px; margin-top:18px; }
+    .all-agent-table th { background:#e8eefc; color:#111827; font-size:14px; padding:12px; text-align:center; border:none; }
+    .all-agent-table td { background:#ffffff; border-top:1px solid #dbe3f0; border-bottom:1px solid #dbe3f0; padding:14px; font-size:14px; vertical-align:middle; }
+    .agent-name-cell { font-weight:bold; width:22%; }
+    .number-cell { text-align:center; font-weight:bold; width:12%; }
+    .score-good { color:#0f7b35; font-weight:bold; text-align:center; }
+    .score-bad { color:#b91c1c; font-weight:bold; text-align:center; }
+    .details-cell { text-align:center; }
+    .details-btn { background:#2563eb; color:white; padding:8px 14px; border-radius:8px; font-size:13px; margin:0; }
+    .category-detail-row td { background:#f8fafc !important; border:1px solid #dbe3f0 !important; border-radius:12px !important; padding:16px !important; }
+    .category-detail-box { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; background:#f8fafc; }
+    .category-item { background:white; border:1px solid #dbe3f0; border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; gap:10px; font-size:13px; }
+    .mini-table { max-width:700px; }
+    .chart-count { font-weight:bold; text-align:center; }
+    #disputePopup { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999; }
+    .popup { background:white; width:380px; max-width:95%; padding:22px; border-radius:14px; }
+    a { color:#1976d2; font-weight:bold; text-decoration:none; }
+    a:hover { text-decoration:underline; }
   </style>
 </head>
 
@@ -269,16 +107,12 @@
 <div id="disputePopup">
   <div class="popup">
     <h3>Raise Dispute</h3>
-
     <label>SL No</label>
     <input type="text" id="disputeSlNo">
-
     <label>Description</label>
     <textarea id="disputeDesc" rows="4"></textarea>
-
     <button onclick="closeDispute()">Cancel</button>
     <button id="submitDisputeBtn" class="danger" onclick="submitDispute()">Submit</button>
-
     <p id="disputeSubmitStatus" class="loading"></p>
   </div>
 </div>
@@ -310,9 +144,7 @@ function setLoading(id, text) {
 async function apiCall(payload) {
   const response = await fetch(SCRIPT_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload)
   });
 
@@ -322,10 +154,7 @@ async function apiCall(payload) {
     return JSON.parse(text);
   } catch (err) {
     console.log("API returned:", text);
-    return {
-      ok: false,
-      error: "Apps Script returned invalid response."
-    };
+    return { ok:false, error:"Apps Script returned invalid response." };
   }
 }
 
@@ -355,10 +184,7 @@ async function login() {
 }
 
 async function validateUser(email) {
-  const data = await apiCall({
-    action: "login",
-    email: email
-  });
+  const data = await apiCall({ action:"login", email:email });
 
   if (!data.ok) {
     alert(data.error);
@@ -401,15 +227,14 @@ async function loadReport() {
   try {
     btn.disabled = true;
     setLoading("reportStatus", "Fetching agent report data...");
-
     document.getElementById("allAgentSummary").style.display = "none";
 
     const data = await apiCall({
-      action: "getReport",
-      email: CURRENT_USER,
-      agent: agent,
-      from: from,
-      to: to
+      action:"getReport",
+      email:CURRENT_USER,
+      agent:agent,
+      from:from,
+      to:to
     });
 
     if (!data.ok) {
@@ -448,12 +273,12 @@ async function sendReportEmail() {
   const htmlBody = buildEmailHtml(CURRENT_REPORT);
 
   const data = await apiCall({
-    action: "sendAgentReportEmail",
-    email: CURRENT_USER,
-    agentName: CURRENT_REPORT.agent,
-    agentEmail: agentEmail,
-    period: CURRENT_REPORT.period,
-    htmlBody: htmlBody
+    action:"sendAgentReportEmail",
+    email:CURRENT_USER,
+    agentName:CURRENT_REPORT.agent,
+    agentEmail:agentEmail,
+    period:CURRENT_REPORT.period,
+    htmlBody:htmlBody
   });
 
   if (!data.ok) {
@@ -462,23 +287,124 @@ async function sendReportEmail() {
     return;
   }
 
-  setLoading("reportStatus", "✅ Email sent successfully.");
+  setLoading("reportStatus", "Email sent successfully.");
+}
+
+function sanitizeEmailText(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/�/g, "")
+    .replace(/\n/g, "<br>");
 }
 
 function buildEmailHtml(data) {
+  const sortedCalls = [...data.calls].sort((a, b) => Number(a.score || 0) - Number(b.score || 0));
+  const selectedCalls = sortedCalls.slice(0, 2);
+
+  while (selectedCalls.length < 2) {
+    selectedCalls.push({});
+  }
+
+  const c1 = selectedCalls[0];
+  const c2 = selectedCalls[1];
+
   return `
     <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5;">
-      <p>Hi ${data.agent},</p>
-      <p>Please find the Audit Feedback for the calls calibrated in the mentioned week.</p>
+      <p>PFB the Audit Reviews for the calls catered in the mentioned week</p>
 
-      ${document.getElementById("summary").innerHTML}
-      ${document.getElementById("calls").innerHTML}
-      ${document.getElementById("disputes").innerHTML}
+      <table style="width:900px;border-collapse:collapse;text-align:center;">
+        <tr>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;">Audit Week</td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;">${data.period || ""}</td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+          <td style="border:1px solid #000;padding:6px;font-weight:bold;"></td>
+        </tr>
+
+        <tr style="background:#b7e1cd;font-weight:bold;">
+          <td style="border:1px solid #000;padding:8px;">Agent Name</td>
+          <td style="border:1px solid #000;padding:8px;">Total Calls<br>Audited</td>
+          <td style="border:1px solid #000;padding:8px;">Call Opening<br>Rating</td>
+          <td style="border:1px solid #000;padding:8px;">Issue<br>Understanding</td>
+          <td style="border:1px solid #000;padding:8px;">Resolution<br>Pitched</td>
+          <td style="border:1px solid #000;padding:8px;">Followed<br>Process</td>
+          <td style="border:1px solid #000;padding:8px;">Communication Skills<br>(Assurance / Empathy)</td>
+          <td style="border:1px solid #000;padding:8px;">Final Score<br>(Out of 25)</td>
+          <td style="border:1px solid #000;padding:8px;">Audit Score</td>
+        </tr>
+
+        <tr>
+          <td style="border:1px solid #000;padding:8px;font-weight:bold;">${data.agent}</td>
+          <td style="border:1px solid #000;padding:8px;">${data.totalAudits}</td>
+          <td style="border:1px solid #000;padding:8px;">-</td>
+          <td style="border:1px solid #000;padding:8px;">-</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
+          <td style="border:1px solid #000;padding:8px;">-</td>
+          <td style="border:1px solid #000;padding:8px;background:#b7e1cd;">${data.averageScore}%</td>
+        </tr>
+      </table>
+
+      <p><b>Note:</b> Both calls still there is room to improve for better results in future conversations.</p>
+
+      <table style="width:900px;border-collapse:collapse;text-align:center;">
+        ${emailCompareRow("Agent Name", data.agent, data.agent)}
+        ${emailCompareRow("SL No", c1.slNo, c2.slNo)}
+        ${emailCompareRow("Call Recording", c1.recordingLink ? `<a href="${c1.recordingLink}">Open Recording</a>` : "No Link", c2.recordingLink ? `<a href="${c2.recordingLink}">Open Recording</a>` : "No Link")}
+        ${emailCompareRow("Call Date", c1.callDate, c2.callDate)}
+        ${emailCompareRow("Issue Type", c1.queryType, c2.queryType)}
+        ${emailCompareRow("Final Score", c1.finalScore, c2.finalScore)}
+        ${emailCompareRow("Audit Score", (c1.score || "") + "%", (c2.score || "") + "%")}
+        ${emailCompareRow("Feedback", sanitizeEmailText(c1.feedback), sanitizeEmailText(c2.feedback))}
+      </table>
+
+      ${buildCleanSummaryForEmail(data)}
 
       <p style="margin-top:20px;">
-        Best regards,<br>
-        QA Audit Team
+        Regards,<br>
+        QA Team
       </p>
+    </div>
+  `;
+}
+
+function emailCompareRow(label, value1, value2) {
+  return `
+    <tr>
+      <td style="border:1px solid #000;background:#b7e1cd;font-weight:bold;padding:8px;width:160px;">${label}</td>
+      <td style="border:1px solid #000;padding:8px;width:370px;">${value1 || ""}</td>
+      <td style="border:1px solid #000;padding:8px;width:370px;">${value2 || ""}</td>
+    </tr>
+  `;
+}
+
+function buildCleanSummaryForEmail(data) {
+  let good = 0;
+  let bad = 0;
+  let feedbackTexts = [];
+
+  data.calls.forEach(call => {
+    if (Number(call.score || 0) >= 80) good++;
+    else bad++;
+
+    if (call.feedback) feedbackTexts.push(call.feedback);
+  });
+
+  let summary = buildFeedbackSummary(feedbackTexts, good, bad, data.calls.length);
+
+  summary = summary
+    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/📌|✅|⚠️|❌|📊|📍|🔴|🟢/g, "");
+
+  return `
+    <div style="margin-top:20px;background:#f8fafc;border-left:4px solid #1976d2;padding:12px;">
+      ${summary}
     </div>
   `;
 }
@@ -502,10 +428,10 @@ async function loadAllAgentSummary() {
     document.getElementById("disputes").style.display = "none";
 
     const data = await apiCall({
-      action: "getAllAgentSummary",
-      email: CURRENT_USER,
-      from: from,
-      to: to
+      action:"getAllAgentSummary",
+      email:CURRENT_USER,
+      from:from,
+      to:to
     });
 
     if (!data.ok) {
@@ -549,7 +475,6 @@ function renderAllAgentSummary(rows, from, to) {
   let html = `
     <h2>All-Agent Summary</h2>
     <p><b>Period:</b> ${from} to ${to}</p>
-
     <table class="all-agent-table">
       <thead>
         <tr>
@@ -572,12 +497,9 @@ function renderAllAgentSummary(rows, from, to) {
         <td class="number-cell">${row.totalCalls}</td>
         <td class="${scoreClass}">${row.averageScore}%</td>
         <td class="details-cell">
-          <button class="details-btn" onclick="toggleCategoryDetails(${index})" id="detailsBtn${index}">
-            View Details
-          </button>
+          <button class="details-btn" onclick="toggleCategoryDetails(${index})" id="detailsBtn${index}">View Details</button>
         </td>
       </tr>
-
       <tr id="categoryRow${index}" class="category-detail-row" style="display:none;">
         <td colspan="4">
           <div class="category-detail-box">
@@ -593,11 +515,7 @@ function renderAllAgentSummary(rows, from, to) {
     `;
   });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += `</tbody></table>`;
   div.innerHTML = html;
 }
 
@@ -639,7 +557,6 @@ function renderCalls(calls) {
   let html = `
     <h2>Category-wise Call Summary</h2>
     ${buildCategorySummary(grouped)}
-
     <h2>Call Breakdown</h2>
     <p><b>Total Calls Showing:</b> ${calls.length}</p>
   `;
@@ -647,7 +564,6 @@ function renderCalls(calls) {
   Object.keys(grouped).sort().forEach(category => {
     html += `
       <div class="category-title">${category} - ${grouped[category].length} calls</div>
-
       <table>
         <thead>
           <tr>
@@ -666,10 +582,7 @@ function renderCalls(calls) {
 
     grouped[category].forEach(call => {
       const goodCall = Number(call.score || 0) >= 80;
-
-      const recording = call.recordingLink
-        ? `<a href="${call.recordingLink}" target="_blank">Open Recording</a>`
-        : "No Link";
+      const recording = call.recordingLink ? `<a href="${call.recordingLink}" target="_blank">Open Recording</a>` : "No Link";
 
       html += `
         <tr class="${goodCall ? 'good' : 'bad'}">
@@ -685,17 +598,13 @@ function renderCalls(calls) {
       `;
     });
 
-    html += `
-        </tbody>
-      </table>
-    `;
+    html += `</tbody></table>`;
   });
 
   html += `
     <div class="summary-box">
       ${buildFeedbackSummary(feedbackTexts, good, bad, calls.length)}
     </div>
-
     <div style="text-align:right; margin-top:20px;">
       <button class="danger" onclick="openDispute()">Raise Dispute</button>
     </div>
@@ -727,11 +636,7 @@ function buildCategorySummary(grouped) {
     `;
   });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += `</tbody></table>`;
   return html;
 }
 
@@ -780,9 +685,7 @@ function addUnique(list, point) {
 
   const exists = list.some(item => {
     const existing = normalizePoint(item);
-    return existing === normalized ||
-           existing.includes(normalized) ||
-           normalized.includes(existing);
+    return existing === normalized || existing.includes(normalized) || normalized.includes(existing);
   });
 
   if (!exists) list.push(cleaned);
@@ -798,7 +701,6 @@ function splitFeedbackSections(feedback) {
   const goodIndex = lower.indexOf("good practice");
   const missedFullIndex = lower.indexOf("missed pitch points, uninformed pointers, and red-flagged issues");
   const missedShortIndex = lower.indexOf("missed pitch points");
-
   const missedIndex = missedFullIndex !== -1 ? missedFullIndex : missedShortIndex;
 
   if (goodIndex !== -1) {
@@ -836,7 +738,6 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
 
   feedbackTexts.forEach(feedback => {
     const sections = splitFeedbackSections(feedback);
-
     extractPoints(sections.goodPractice).forEach(point => addUnique(strengths, point));
     extractPoints(sections.improvement).forEach(point => addUnique(improvementAreas, point));
   });
@@ -850,21 +751,16 @@ function buildFeedbackSummary(feedbackTexts, good, bad, totalCalls) {
   }
 
   return `
-    <h2>📌 Consolidated Audit Summary</h2>
-
+    <h2>Consolidated Audit Summary</h2>
     <p><b>Total Calls Checked:</b> ${totalCalls}</p>
     <p><b>Good Calls:</b> ${good}</p>
     <p><b>Bad Calls:</b> ${bad}</p>
 
-    <h3>✅ Key Strengths</h3>
-    <ul>
-      ${strengths.slice(0, 5).map(s => `<li>${s}</li>`).join("")}
-    </ul>
+    <h3>Key Strengths</h3>
+    <ul>${strengths.slice(0, 5).map(s => `<li>${s}</li>`).join("")}</ul>
 
-    <h3>⚠️ Major Improvement Areas</h3>
-    <ul>
-      ${improvementAreas.slice(0, 6).map(g => `<li>${g}</li>`).join("")}
-    </ul>
+    <h3>Major Improvement Areas</h3>
+    <ul>${improvementAreas.slice(0, 6).map(g => `<li>${g}</li>`).join("")}</ul>
   `;
 }
 
@@ -894,13 +790,13 @@ async function submitDispute() {
     setLoading("disputeSubmitStatus", "Dispute is getting submitted...");
 
     const data = await apiCall({
-      action: "submitDispute",
-      email: CURRENT_USER,
-      agent: agent,
-      from: from,
-      to: to,
-      slNo: slNo,
-      description: description
+      action:"submitDispute",
+      email:CURRENT_USER,
+      agent:agent,
+      from:from,
+      to:to,
+      slNo:slNo,
+      description:description
     });
 
     if (!data.ok) {
@@ -932,9 +828,9 @@ async function loadDisputes() {
   div.innerHTML = "<h2>Dispute Status</h2><p class='loading'>Fetching dispute status...</p>";
 
   const data = await apiCall({
-    action: "getDisputes",
-    email: CURRENT_USER,
-    agent: agent
+    action:"getDisputes",
+    email:CURRENT_USER,
+    agent:agent
   });
 
   if (!data.ok) {
@@ -985,11 +881,7 @@ async function loadDisputes() {
     `;
   });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += `</tbody></table>`;
   div.innerHTML = html;
 }
 </script>
