@@ -104,28 +104,52 @@
 
     .all-agent-table {
       table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
     }
 
     .all-agent-table th {
       background: #ede7f6;
       text-align: center;
       font-size: 14px;
+      padding: 10px;
     }
 
     .all-agent-table td {
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.5;
+      padding: 10px;
+    }
+
+    .all-agent-table th:nth-child(1),
+    .all-agent-table td:nth-child(1) {
+      width: 13%;
+    }
+
+    .all-agent-table th:nth-child(2),
+    .all-agent-table td:nth-child(2) {
+      width: 9%;
+      text-align: center;
+    }
+
+    .all-agent-table th:nth-child(3),
+    .all-agent-table td:nth-child(3) {
+      width: 9%;
+      text-align: center;
+    }
+
+    .all-agent-table th:nth-child(4),
+    .all-agent-table td:nth-child(4) {
+      width: 69%;
     }
 
     .agent-name-cell {
       font-weight: bold;
-      width: 18%;
     }
 
     .number-cell {
       text-align: center;
       font-weight: bold;
-      width: 12%;
     }
 
     .score-good {
@@ -141,8 +165,8 @@
     }
 
     .category-list {
-      columns: 3;
-      column-gap: 28px;
+      columns: 4;
+      column-gap: 24px;
       margin: 0;
       padding-left: 18px;
     }
@@ -150,6 +174,7 @@
     .category-list li {
       break-inside: avoid;
       margin-bottom: 4px;
+      line-height: 1.4;
     }
 
     .mini-table {
@@ -192,6 +217,22 @@
     }
 
     a:hover { text-decoration: underline; }
+
+    @media(max-width: 900px) {
+      .category-list {
+        columns: 2;
+      }
+    }
+
+    @media(max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .category-list {
+        columns: 1;
+      }
+    }
   </style>
 </head>
 
@@ -469,7 +510,7 @@ function renderAllAgentSummary(rows, from, to) {
       <thead>
         <tr>
           <th>Agent Name</th>
-          <th>Total Calls Audited</th>
+          <th>Total Calls</th>
           <th>Average %</th>
           <th>Category-wise Calls</th>
         </tr>
