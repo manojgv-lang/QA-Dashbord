@@ -102,26 +102,41 @@
       margin-top: 12px;
     }
 
-    .copy-box {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 14px;
-      white-space: pre-wrap;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-top: 14px;
+    .category-chip {
+      display: inline-block;
+      background: #eef4ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      padding: 5px 10px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .all-agent-table th {
+      text-align: left;
+      background: #ede7f6;
+    }
+
+    .all-agent-table td {
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .copy-note {
+      color: #475569;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .mini-table {
+      max-width: 700px;
     }
 
     .mini-table th,
     .mini-table td {
       font-size: 14px;
       padding: 8px;
-    }
-
-    .chart-table {
-      max-width: 700px;
     }
 
     .chart-count {
@@ -189,15 +204,15 @@
 </div>
 
 <div class="card" id="adminFilters" style="display:none;">
-  <h2>Admin All-Agent Summary Filters</h2>
+  <h2>All Agent Summary</h2>
 
   <div class="grid-2">
     <div>
-      <label>All-Agent From Date</label>
+      <label>From Date</label>
       <input type="date" id="allFromDate">
     </div>
     <div>
-      <label>All-Agent To Date</label>
+      <label>To Date</label>
       <input type="date" id="allToDate">
     </div>
   </div>
@@ -260,12 +275,6 @@ async function apiCall(payload) {
   return await response.json();
 }
 
-function copyText(id) {
-  const text = document.getElementById(id).innerText;
-  navigator.clipboard.writeText(text);
-  alert("Copied successfully");
-}
-
 async function login() {
   const provider = new firebase.auth.GoogleAuthProvider();
   const btn = document.getElementById("loginBtn");
@@ -280,7 +289,6 @@ async function login() {
     document.getElementById("email").innerText = CURRENT_USER;
 
     setLoading("mainStatus", "Verifying access...");
-
     await validateUser(CURRENT_USER);
 
     setLoading("mainStatus", "Login successful.");
@@ -430,15 +438,16 @@ function renderAllAgentSummary(rows, from, to) {
     return;
   }
 
-  let copyText = `All-Agent QA Summary\\nPeriod: ${from} to ${to}\\n\\n`;
-  copyText += `Agent Name\\tTotal Calls Audited\\tAverage %\\tCategory-wise Calls\\n`;
+  let copyText = "Agent Name\tTotal Calls Audited\tAverage %\tCategory-wise Calls\n";
 
   let html = `
     <h2>All-Agent Summary</h2>
     <p><b>Period:</b> ${from} to ${to}</p>
-    <button onclick="copyText('allAgentCopy')">Copy Email/Sheet Format</button>
 
-    <table>
+    <button onclick="copyAllAgentTable()">Copy Complete Table</button>
+    <p class="copy-note">This copies the full table in Google Sheet friendly format.</p>
+
+    <table class="all-agent-table" id="allAgentTable">
       <thead>
         <tr>
           <th>Agent Name</th>
@@ -451,24 +460,24 @@ function renderAllAgentSummary(rows, from, to) {
   `;
 
   rows.forEach(row => {
-    const categoryText = Object.keys(row.categories || {})
-      .sort()
-      .map(cat => `${cat}: ${row.categories[cat]}`)
-      .join("<br>");
+    const categories = Object.keys(row.categories || {}).sort();
 
-    const categoryCopy = Object.keys(row.categories || {})
-      .sort()
+    const categoryHtml = categories
+      .map(cat => `<span class="category-chip">${cat}: ${row.categories[cat]}</span>`)
+      .join("");
+
+    const categoryCopy = categories
       .map(cat => `${cat}: ${row.categories[cat]}`)
       .join(", ");
 
-    copyText += `${row.agent}\\t${row.totalCalls}\\t${row.averageScore}%\\t${categoryCopy}\\n`;
+    copyText += `${row.agent}\t${row.totalCalls}\t${row.averageScore}%\t${categoryCopy}\n`;
 
     html += `
       <tr>
-        <td>${row.agent}</td>
+        <td><b>${row.agent}</b></td>
         <td>${row.totalCalls}</td>
         <td>${row.averageScore}%</td>
-        <td>${categoryText}</td>
+        <td>${categoryHtml}</td>
       </tr>
     `;
   });
@@ -477,11 +486,16 @@ function renderAllAgentSummary(rows, from, to) {
       </tbody>
     </table>
 
-    <h3>Copy/Paste Format</h3>
-    <div class="copy-box" id="allAgentCopy">${copyText}</div>
+    <textarea id="allAgentCopyText" style="display:none;">${copyText}</textarea>
   `;
 
   div.innerHTML = html;
+}
+
+function copyAllAgentTable() {
+  const text = document.getElementById("allAgentCopyText").value;
+  navigator.clipboard.writeText(text);
+  alert("Complete table copied. Paste it into Google Sheet or email.");
 }
 
 function renderCalls(calls) {
@@ -578,7 +592,7 @@ function buildCategorySummary(grouped) {
   const categories = Object.keys(grouped).sort();
 
   let html = `
-    <table class="mini-table chart-table">
+    <table class="mini-table">
       <thead>
         <tr>
           <th>Category</th>
