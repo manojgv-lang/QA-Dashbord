@@ -3,20 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <title>QA Dashboard</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f5f7fb;
       margin: 0;
-      padding: 20px;
+      padding: 24px;
       color: #111;
     }
 
     .card {
       background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
       margin-bottom: 20px;
     }
 
@@ -25,17 +26,18 @@
     }
 
     label {
-      font-weight: bold;
+      font-weight: 700;
       display: block;
-      margin-top: 10px;
+      margin-top: 12px;
     }
 
     input, select {
-      padding: 10px;
       width: 100%;
-      margin-top: 5px;
+      padding: 10px;
+      margin-top: 6px;
       border: 1px solid #ccc;
       border-radius: 8px;
+      box-sizing: border-box;
     }
 
     button {
@@ -43,8 +45,8 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      margin-top: 15px;
+      font-weight: 700;
+      margin-top: 16px;
       margin-right: 8px;
     }
 
@@ -58,21 +60,27 @@
       color: white;
     }
 
-    .danger {
-      background: #d93025;
-      color: white;
-    }
-
     .status {
       margin-top: 12px;
-      font-weight: bold;
+      font-weight: 700;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .report-box {
+      background: white;
+      padding: 15px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
-      margin-top: 15px;
+      margin-top: 14px;
       background: white;
     }
 
@@ -93,80 +101,86 @@
       font-weight: bold;
       text-align: center;
     }
-
-    .green {
-      background: #d9ead3;
-    }
-
-    .report-box {
-      background: #fff;
-      padding: 15px;
-      border: 1px solid #ddd;
-      overflow-x: auto;
-    }
-
-    .hidden {
-      display: none;
-    }
   </style>
 </head>
 
 <body>
 
-  <div class="card" id="loginBox">
-    <h2>QA Dashboard Login</h2>
+<div class="card" id="loginBox">
+  <h2>QA Dashboard</h2>
 
-    <label>Email ID</label>
-    <input type="email" id="loginEmail" placeholder="Enter your company email" />
+  <label>Email</label>
+  <input type="email" id="loginEmail" placeholder="Enter your email" />
 
-    <button class="primary" onclick="login()">Login</button>
+  <button class="primary" onclick="login()">Login</button>
 
-    <div id="loginStatus" class="status"></div>
+  <div id="loginStatus" class="status"></div>
+</div>
+
+<div id="dashboardBox" class="hidden">
+
+  <div class="card">
+    <h2>Agent QA Report</h2>
+
+    <label>Agent</label>
+    <select id="agentSelect"></select>
+
+    <label>From Date</label>
+    <input type="date" id="fromDate" />
+
+    <label>To Date</label>
+    <input type="date" id="toDate" />
+
+    <button class="primary" onclick="generateReport()">Generate Report</button>
+    <button class="success" onclick="sendReportEmail()">Send Report</button>
+
+    <div id="reportStatus" class="status"></div>
+    <div id="emailStatus" class="status"></div>
   </div>
 
-  <div id="dashboardBox" class="hidden">
-
-    <div class="card">
-      <h2>Agent QA Report</h2>
-
-      <label>Agent</label>
-      <select id="agentSelect"></select>
-
-      <label>From Date</label>
-      <input type="date" id="fromDate" />
-
-      <label>To Date</label>
-      <input type="date" id="toDate" />
-
-      <button class="primary" onclick="generateReport()">Generate Report</button>
-      <button class="success" onclick="sendReportEmail()">Send Report</button>
-
-      <div id="reportStatus" class="status"></div>
-      <div id="emailStatus" class="status"></div>
+  <div class="card">
+    <h3>Generated Report Preview</h3>
+    <div id="reportArea" class="report-box">
+      Report will appear here.
     </div>
-
-    <div class="card">
-      <h3>Generated Report Preview</h3>
-      <div id="reportArea" class="report-box">
-        Report will appear here.
-      </div>
-    </div>
-
   </div>
+
+</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx20-majQxyCLQaSjvkZ8sZ6za2c86SoKqXasoffs3eM9u38otubiHHkcLeJXcBAFfZIw/exec";
+const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 
 let currentUser = null;
 let currentReport = null;
 
 async function apiCall(payload) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      }
+    });
 
-  return await res.json();
+    const text = await res.text();
+
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      console.error("Non JSON response:", text);
+      return {
+        ok: false,
+        error: "Wrong Apps Script URL or deployment access issue. Use Web App URL ending with /exec and set access to Anyone."
+      };
+    }
+
+  } catch (err) {
+    return {
+      ok: false,
+      error: err.message
+    };
+  }
 }
 
 async function login() {
@@ -175,12 +189,12 @@ async function login() {
 
   if (!email) {
     status.style.color = "red";
-    status.innerHTML = "Please enter email ID.";
+    status.innerHTML = "Please enter email.";
     return;
   }
 
   status.style.color = "#111";
-  status.innerHTML = "Logging in...";
+  status.innerHTML = "Verifying access...";
 
   const data = await apiCall({
     action: "login",
@@ -208,10 +222,10 @@ function loadAgents(agents) {
   select.innerHTML = "";
 
   agents.forEach(agent => {
-    const opt = document.createElement("option");
-    opt.value = agent;
-    opt.textContent = agent;
-    select.appendChild(opt);
+    const option = document.createElement("option");
+    option.value = agent;
+    option.textContent = agent;
+    select.appendChild(option);
   });
 }
 
@@ -253,26 +267,20 @@ async function generateReport() {
 }
 
 function buildReportHtml(data) {
-  let callsHtml = "";
+  let callRows = "";
 
   data.calls.forEach((call, index) => {
-    callsHtml += `
+    callRows += `
       <tr>
         <td>${index + 1}</td>
         <td>${data.agent}</td>
         <td>${call.slNo || "-"}</td>
-        <td>
-          ${
-            call.recordingLink
-              ? `<a href="${call.recordingLink}" target="_blank">Recording Link</a>`
-              : "-"
-          }
-        </td>
+        <td>${call.recordingLink ? `<a href="${call.recordingLink}" target="_blank">Recording Link</a>` : "-"}</td>
         <td>${call.callDate || "-"}</td>
         <td>${call.queryType || "-"}</td>
         <td>${call.finalScore || "-"}</td>
         <td>${call.score || "-"}%</td>
-        <td>${formatFeedback(call.feedback)}</td>
+        <td>${formatText(call.feedback)}</td>
       </tr>
     `;
   });
@@ -281,9 +289,7 @@ function buildReportHtml(data) {
     <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;">
       <p>Hi ${data.agent},</p>
 
-      <p>
-        Please find the Audit Feedback for the calls calibrated in the mentioned week.
-      </p>
+      <p>Please find the Audit Feedback for the calls calibrated in the mentioned week.</p>
 
       <table>
         <tr>
@@ -302,9 +308,7 @@ function buildReportHtml(data) {
         </tr>
       </table>
 
-      <p>
-        Note: Each call and effort is meant to improve the future results in further conversations.
-      </p>
+      <p>Note: Each call and effort is meant to improve the future results in further conversations.</p>
 
       <table>
         <tr>
@@ -318,7 +322,7 @@ function buildReportHtml(data) {
           <th>Audit Score</th>
           <th>Feedback / Observation</th>
         </tr>
-        ${callsHtml}
+        ${callRows}
       </table>
 
       ${buildImprovementTable(data)}
@@ -332,25 +336,25 @@ function buildReportHtml(data) {
 }
 
 function buildImprovementTable(data) {
-  const lowCalls = data.calls.filter(c => Number(c.score) < 90);
+  const issueCalls = data.calls.filter(call => Number(call.score) < 90);
 
   let rows = "";
 
-  if (lowCalls.length === 0) {
+  if (issueCalls.length === 0) {
     rows = `
       <tr>
         <td>${data.agent}</td>
         <td>Overall Performance</td>
-        <td>Agent has maintained good audit performance for the selected period.</td>
+        <td>Good performance maintained for the selected audit period.</td>
       </tr>
     `;
   } else {
-    lowCalls.forEach(call => {
+    issueCalls.forEach(call => {
       rows += `
         <tr>
           <td>${data.agent}</td>
           <td>${call.queryType || "Improvement Area"}</td>
-          <td>${formatFeedback(call.feedback)}</td>
+          <td>${formatText(call.feedback)}</td>
         </tr>
       `;
     });
@@ -371,7 +375,7 @@ function buildImprovementTable(data) {
   `;
 }
 
-function formatFeedback(text) {
+function formatText(text) {
   if (!text) return "-";
 
   return text
@@ -397,14 +401,12 @@ async function sendReportEmail() {
     return;
   }
 
-  const confirmSend = confirm("Send this QA report to " + agentEmail + "?");
+  const confirmSend = confirm("Send QA report to " + agentEmail + "?");
 
   if (!confirmSend) return;
 
   status.style.color = "#111";
   status.innerHTML = "Sending report email...";
-
-  const htmlBody = buildEmailHtml(currentReport);
 
   const data = await apiCall({
     action: "sendAgentReportEmail",
@@ -412,7 +414,7 @@ async function sendReportEmail() {
     agentName: currentReport.agent,
     agentEmail: agentEmail,
     period: currentReport.period,
-    htmlBody: htmlBody
+    htmlBody: buildEmailHtml(currentReport)
   });
 
   if (!data.ok) {
