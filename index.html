@@ -309,6 +309,8 @@ function buildEmailHtml(data) {
   const c1 = selectedCalls[0];
   const c2 = selectedCalls[1];
 
+  const m = data.metrics || {};
+
   return `
     <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5;">
       <p>PFB the Audit Reviews for the calls catered in the mentioned week</p>
@@ -341,12 +343,12 @@ function buildEmailHtml(data) {
         <tr>
           <td style="border:1px solid #000;padding:8px;font-weight:bold;">${data.agent}</td>
           <td style="border:1px solid #000;padding:8px;">${data.totalAudits}</td>
-          <td style="border:1px solid #000;padding:8px;">-</td>
-          <td style="border:1px solid #000;padding:8px;">-</td>
-          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
-          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
-          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">-</td>
-          <td style="border:1px solid #000;padding:8px;">-</td>
+          <td style="border:1px solid #000;padding:8px;">${m.callOpening || "-"}</td>
+          <td style="border:1px solid #000;padding:8px;">${m.issueUnderstanding || "-"}</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">${m.resolutionPitched || "-"}</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">${m.followedProcess || "-"}</td>
+          <td style="border:1px solid #000;padding:8px;background:#f4cccc;">${m.communication || "-"}</td>
+          <td style="border:1px solid #000;padding:8px;">${m.finalScore || "-"}</td>
           <td style="border:1px solid #000;padding:8px;background:#b7e1cd;">${data.averageScore}%</td>
         </tr>
       </table>
