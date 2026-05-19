@@ -102,31 +102,54 @@
       margin-top: 12px;
     }
 
-    .category-chip {
-      display: inline-block;
-      background: #eef4ff;
-      border: 1px solid #c7d2fe;
-      border-radius: 999px;
-      padding: 5px 10px;
-      margin: 3px;
-      font-size: 12px;
-      font-weight: 600;
+    .all-agent-table {
+      table-layout: fixed;
     }
 
     .all-agent-table th {
-      text-align: left;
       background: #ede7f6;
+      text-align: center;
+      font-size: 14px;
     }
 
     .all-agent-table td {
-      vertical-align: top;
-      line-height: 1.5;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    .copy-note {
-      color: #475569;
-      font-size: 13px;
-      margin-top: 8px;
+    .agent-name-cell {
+      font-weight: bold;
+      width: 18%;
+    }
+
+    .number-cell {
+      text-align: center;
+      font-weight: bold;
+      width: 12%;
+    }
+
+    .score-good {
+      color: #0f7b35;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .score-bad {
+      color: #b91c1c;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .category-list {
+      columns: 3;
+      column-gap: 28px;
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .category-list li {
+      break-inside: avoid;
+      margin-bottom: 4px;
     }
 
     .mini-table {
@@ -438,16 +461,11 @@ function renderAllAgentSummary(rows, from, to) {
     return;
   }
 
-  let copyText = "Agent Name\tTotal Calls Audited\tAverage %\tCategory-wise Calls\n";
-
   let html = `
     <h2>All-Agent Summary</h2>
     <p><b>Period:</b> ${from} to ${to}</p>
 
-    <button onclick="copyAllAgentTable()">Copy Complete Table</button>
-    <p class="copy-note">This copies the full table in Google Sheet friendly format.</p>
-
-    <table class="all-agent-table" id="allAgentTable">
+    <table class="all-agent-table">
       <thead>
         <tr>
           <th>Agent Name</th>
@@ -462,21 +480,19 @@ function renderAllAgentSummary(rows, from, to) {
   rows.forEach(row => {
     const categories = Object.keys(row.categories || {}).sort();
 
-    const categoryHtml = categories
-      .map(cat => `<span class="category-chip">${cat}: ${row.categories[cat]}</span>`)
-      .join("");
+    const categoryHtml = `
+      <ul class="category-list">
+        ${categories.map(cat => `<li><b>${cat}</b>: ${row.categories[cat]}</li>`).join("")}
+      </ul>
+    `;
 
-    const categoryCopy = categories
-      .map(cat => `${cat}: ${row.categories[cat]}`)
-      .join(", ");
-
-    copyText += `${row.agent}\t${row.totalCalls}\t${row.averageScore}%\t${categoryCopy}\n`;
+    const scoreClass = Number(row.averageScore) >= 80 ? "score-good" : "score-bad";
 
     html += `
       <tr>
-        <td><b>${row.agent}</b></td>
-        <td>${row.totalCalls}</td>
-        <td>${row.averageScore}%</td>
+        <td class="agent-name-cell">${row.agent}</td>
+        <td class="number-cell">${row.totalCalls}</td>
+        <td class="${scoreClass}">${row.averageScore}%</td>
         <td>${categoryHtml}</td>
       </tr>
     `;
@@ -485,17 +501,9 @@ function renderAllAgentSummary(rows, from, to) {
   html += `
       </tbody>
     </table>
-
-    <textarea id="allAgentCopyText" style="display:none;">${copyText}</textarea>
   `;
 
   div.innerHTML = html;
-}
-
-function copyAllAgentTable() {
-  const text = document.getElementById("allAgentCopyText").value;
-  navigator.clipboard.writeText(text);
-  alert("Complete table copied. Paste it into Google Sheet or email.");
 }
 
 function renderCalls(calls) {
@@ -669,9 +677,7 @@ function addUnique(list, point) {
            normalized.includes(existing);
   });
 
-  if (!exists) {
-    list.push(cleaned);
-  }
+  if (!exists) list.push(cleaned);
 }
 
 function splitFeedbackSections(feedback) {
