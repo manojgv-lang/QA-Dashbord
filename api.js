@@ -1,7 +1,7 @@
 // api.js – Vercel serverless function exposed at /api
 
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnottuUJ8uDxE5IuDdpvXGoKbs14Sk4M_5jtOWwhcFu73NyJ8FWodl5SoA_V99V5vh/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20-majQxyCLQaSjvkZ8sZ6za2c86SoKqXasoffs3eM9u38otubiHHkcLeJXcBAFfZIw/exec;
 
   // Take over the query string (?listAgents=1, ?agent=..., etc.)
   const queryPart = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
