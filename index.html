@@ -925,8 +925,6 @@ async function submitDispute() {
 
 async function loadDisputes() {
   const agent = document.getElementById("agentSelect").value;
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
 
   const div = document.getElementById("disputes");
   div.style.display = "block";
@@ -935,9 +933,7 @@ async function loadDisputes() {
   const data = await apiCall({
     action: "getDisputes",
     email: CURRENT_USER,
-    agent: agent,
-    from: from,
-    to: to
+    agent: agent
   });
 
   if (!data.ok) {
@@ -948,18 +944,21 @@ async function loadDisputes() {
   const disputes = data.disputes || [];
 
   if (!disputes.length) {
-    div.innerHTML = `<h2>Dispute Status</h2><p>No disputes raised for this period.</p>`;
+    div.innerHTML = `<h2>Dispute Status - ${agent}</h2><p>No disputes raised by this agent.</p>`;
     return;
   }
 
   let html = `
-    <h2>Dispute Status</h2>
+    <h2>Dispute Status - ${agent}</h2>
+    <p><b>Showing all disputes raised by this agent irrespective of selected date.</b></p>
     <table>
       <thead>
         <tr>
           <th>Raised Time</th>
           <th>Agent</th>
           <th>SL No</th>
+          <th>Report From Date</th>
+          <th>Report To Date</th>
           <th>Description</th>
           <th>Status</th>
           <th>QA Reply / Resolution</th>
@@ -976,6 +975,8 @@ async function loadDisputes() {
         <td>${d.timestamp || ""}</td>
         <td>${d.agent || ""}</td>
         <td>${d.slNo || ""}</td>
+        <td>${d.from || ""}</td>
+        <td>${d.to || ""}</td>
         <td>${d.description || ""}</td>
         <td>${resolved ? "Resolved" : "Pending"}</td>
         <td>${resolved || "QA reply pending"}</td>
