@@ -361,14 +361,28 @@ function buildEmailHtml(data) {
       <p style="margin:0 0 14px 0;"><b>Note:</b> Both calls still there is room to improve for better results in future conversations.</p>
 
       <table cellpadding="0" cellspacing="0" style="width:900px;border-collapse:collapse;text-align:center;table-layout:fixed;margin-bottom:14px;">
-        ${emailCompareRow("Agent Name", data.agent, data.agent)}
-        ${emailCompareRow("SL No", c1.slNo, c2.slNo)}
+        ${emailCompareRow("Agent Name", c1.agentName, c2.agentName)}
+        ${emailCompareRow("User Number", c1.userNumber, c2.userNumber)}
         ${emailCompareRow("Call Recording", c1.recordingLink ? `<a href="${c1.recordingLink}">Open Recording</a>` : "No Link", c2.recordingLink ? `<a href="${c2.recordingLink}">Open Recording</a>` : "No Link")}
-        ${emailCompareRow("Call Date", c1.callDate, c2.callDate)}
+        ${emailCompareRow("Call Duration", c1.callDuration, c2.callDuration)}
         ${emailCompareRow("Issue Type", c1.queryType, c2.queryType)}
+        ${emailCompareRow("Concerns In Detail", sanitizeEmailText(c1.concernsInDetail), sanitizeEmailText(c2.concernsInDetail))}
+        ${emailCompareRow("Call Opening Rating", c1.callOpeningRating, c2.callOpeningRating)}
+        ${emailCompareRow("Score 1", c1.score1, c2.score1)}
+        ${emailCompareRow("Issue Understanding", c1.issueUnderstandingText, c2.issueUnderstandingText)}
+        ${emailCompareRow("Score 2", c1.score2, c2.score2)}
+        ${emailCompareRow("Resolution Pitched", c1.resolutionPitchedText, c2.resolutionPitchedText)}
+        ${emailCompareRow("Score 3", c1.score3, c2.score3)}
+        ${emailCompareRow("Followed Process", c1.followedProcessText, c2.followedProcessText)}
+        ${emailCompareRow("Score 4", c1.score4, c2.score4)}
+        ${emailCompareRow("Communication Skills<br>(Assurance / Empathy)", c1.communicationText, c2.communicationText)}
+        ${emailCompareRow("Score 5", c1.score5, c2.score5)}
         ${emailCompareRow("Final Score", c1.finalScore, c2.finalScore)}
-        ${emailCompareRow("Audit Score", (c1.score || "") + "%", (c2.score || "") + "%")}
         ${emailCompareRow("Feedback", sanitizeEmailText(c1.feedback), sanitizeEmailText(c2.feedback))}
+        ${emailCompareRow("Call Date", c1.callDate, c2.callDate)}
+        ${emailCompareRow("Audit Date", c1.auditDate, c2.auditDate)}
+        ${emailCompareRow("Audit Week", c1.auditWeek, c2.auditWeek)}
+        ${emailCompareRow("Critical Issue", c1.criticalIssue, c2.criticalIssue)}
       </table>
 
       ${buildCleanSummaryForEmail(data)}
