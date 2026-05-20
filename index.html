@@ -8,54 +8,257 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; background:#eef4ff; padding:20px; color:#111827; }
-    .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
-    button { background:#1976d2; color:#fff; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; font-weight:bold; margin-right:8px; margin-top:8px; }
-    button:hover { background:#1458a1; }
-    button:disabled { background:#9ca3af; cursor:not-allowed; }
-    .green-btn { background:#0f9d58; }
-    .green-btn:hover { background:#0b7d45; }
-    .danger { background:#d32f2f; }
-    .danger:hover { background:#a91f1f; }
-    select, input, textarea { padding:10px; width:100%; margin-top:5px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:8px; box-sizing:border-box; }
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { border:1px solid #ddd; padding:10px; font-size:13px; vertical-align:top; }
-    th { background:#f3e5f5; font-weight:bold; }
-    .good { background:#e8f5e9; }
-    .bad { background:#ffebee; }
-    .pending { background:#fff8e1; }
-    .summary-box { background:#f1f8e9; border-left:5px solid #4caf50; border-radius:10px; padding:18px; margin-top:22px; line-height:1.6; font-size:15px; }
-    .category-title { margin-top:24px; background:#f3e5f5; padding:10px; border-radius:8px; font-weight:bold; }
-    .loading { color:#1976d2; font-weight:bold; margin-top:12px; white-space:pre-line; }
-    .all-agent-table { width:100%; border-collapse:separate; border-spacing:0 8px; margin-top:18px; }
-    .all-agent-table th { background:#e8eefc; color:#111827; font-size:14px; padding:12px; text-align:center; border:none; }
-    .all-agent-table td { background:#ffffff; border-top:1px solid #dbe3f0; border-bottom:1px solid #dbe3f0; padding:14px; font-size:14px; vertical-align:middle; }
-    .agent-name-cell { font-weight:bold; width:22%; }
-    .number-cell { text-align:center; font-weight:bold; width:12%; }
-    .score-good { color:#0f7b35; font-weight:bold; text-align:center; }
-    .score-bad { color:#b91c1c; font-weight:bold; text-align:center; }
-    .details-cell { text-align:center; }
-    .details-btn { background:#2563eb; color:white; padding:8px 14px; border-radius:8px; font-size:13px; margin:0; }
-    .category-detail-row td { background:#f8fafc !important; border:1px solid #dbe3f0 !important; border-radius:12px !important; padding:16px !important; }
-    .category-detail-box { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; background:#f8fafc; }
-    .category-item { background:white; border:1px solid #dbe3f0; border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; gap:10px; font-size:13px; }
-    .mini-table { max-width:700px; }
-    .chart-count { font-weight:bold; text-align:center; }
-    #disputePopup { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999; }
-    .popup { background:white; width:380px; max-width:95%; padding:22px; border-radius:14px; }
-    a { color:#1976d2; font-weight:bold; text-decoration:none; }
-    a:hover { text-decoration:underline; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #eaf1ff 0%, #f8fbff 45%, #eef7ff 100%);
+      padding: 24px;
+      color: #0f172a;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid #e5edf8;
+      border-radius: 22px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 12px 32px rgba(15,23,42,0.08);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .logo {
+      width: 76px;
+      height: 76px;
+      border-radius: 22px;
+      box-shadow: 0 12px 28px rgba(37,99,235,0.28);
+      object-fit: cover;
+    }
+
+    .page-title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #0b1220;
+      margin: 0;
+    }
+
+    .page-subtitle {
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    h1, h2, h3 { color: #0f172a; }
+    h2 { font-size: 25px; margin: 0 0 20px 0; }
+
+    label {
+      display: block;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 8px;
+    }
+
+    select, input, textarea {
+      padding: 14px 16px;
+      width: 100%;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #ffffff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 13px;
+      cursor: pointer;
+      font-weight: 800;
+      margin-right: 8px;
+      margin-top: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 18px rgba(37,99,235,0.18);
+    }
+
+    button:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(37,99,235,0.25); }
+    button:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    .green-btn { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 8px 18px rgba(22,163,74,0.18); }
+    .green-btn:hover { box-shadow: 0 12px 24px rgba(22,163,74,0.25); }
+    .danger { background: linear-gradient(135deg, #dc2626, #b91c1c); box-shadow: 0 8px 18px rgba(220,38,38,0.18); }
+    .danger:hover { box-shadow: 0 12px 24px rgba(220,38,38,0.25); }
+
+    .loading {
+      color: #2563eb;
+      font-weight: 800;
+      margin-top: 12px;
+      white-space: pre-line;
+    }
+
+    .user-info {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .info-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .role-pill {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .4px;
+    }
+
+    .role-admin { background: #dbeafe; color: #1d4ed8; }
+    .role-agent { background: #dcfce7; color: #15803d; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 22px rgba(15,23,42,0.06);
+    }
+
+    th, td {
+      border-bottom: 1px solid #edf2f7;
+      padding: 13px;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-weight: 900;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    .good { background: #f0fdf4; }
+    .bad { background: #fef2f2; }
+    .pending { background: #fff8e1; }
+
+    .summary-box {
+      background: linear-gradient(135deg, #eff6ff, #f8fafc);
+      border-left: 6px solid #2563eb;
+      border-radius: 18px;
+      padding: 22px;
+      margin-top: 22px;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .category-title {
+      margin-top: 24px;
+      background: linear-gradient(135deg, #e0e7ff, #eef2ff);
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-weight: 900;
+      color: #3730a3;
+    }
+
+    .all-agent-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 18px; background: transparent; box-shadow: none; }
+    .all-agent-table th { background: #e8eefc; color: #111827; font-size: 14px; padding: 14px; text-align: center; border: none; }
+    .all-agent-table td { background: #ffffff; border-top: 1px solid #dbe3f0; border-bottom: 1px solid #dbe3f0; padding: 15px; font-size: 14px; vertical-align: middle; }
+    .agent-name-cell { font-weight: 900; width: 22%; }
+    .number-cell { text-align: center; font-weight: 900; width: 12%; }
+    .score-good { color: #15803d; font-weight: 900; text-align: center; }
+    .score-bad { color: #dc2626; font-weight: 900; text-align: center; }
+    .details-cell { text-align: center; }
+    .details-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 9px 14px; border-radius: 10px; font-size: 13px; margin: 0; }
+    .category-detail-row td { background: #f8fafc !important; border: 1px solid #dbe3f0 !important; border-radius: 12px !important; padding: 16px !important; }
+    .category-detail-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #f8fafc; }
+    .category-item { background: white; border: 1px solid #dbe3f0; border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+    .mini-table { max-width: 700px; }
+    .chart-count { font-weight: 900; text-align: center; }
+
+    #disputePopup { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); align-items: center; justify-content: center; z-index: 9999; }
+    .popup { background: white; width: 420px; max-width: 95%; padding: 26px; border-radius: 22px; box-shadow: 0 24px 60px rgba(15,23,42,0.25); }
+
+    a { color: #2563eb; font-weight: 800; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .fixed-badge {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      box-shadow: 0 10px 25px rgba(15,23,42,0.12);
+      font-size: 13px;
+      font-weight: 800;
+      color: #475569;
+      z-index: 99;
+    }
+
+    @media(max-width: 900px) {
+      body { padding: 14px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; }
+      .page-title { font-size: 28px; }
+      .logo { width: 62px; height: 62px; }
+      .category-detail-box { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
 <body>
 
 <div class="card">
-  <h1>QA Dashboard</h1>
+  <div class="topbar">
+    <img class="logo" src="data:image/png;base64,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" alt="Volt Logo">
+    <div>
+      <div class="page-title">QA Dashboard</div>
+      <div class="page-subtitle">Agent Audit Performance & Quality Management System</div>
+    </div>
+  </div>
+
   <button id="loginBtn" onclick="login()">Login with Google</button>
-  <p><b>Email:</b> <span id="email">Not logged in</span></p>
-  <p><b>Role:</b> <span id="role">-</span></p>
+
+  <div class="user-info">
+    <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
+    <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
+  </div>
+
   <p id="mainStatus" class="loading"></p>
 </div>
 
@@ -194,7 +397,7 @@ async function validateUser(email) {
 
   CURRENT_ROLE = data.role;
 
-  document.getElementById("role").innerText = data.role;
+  document.getElementById("role").innerHTML = data.role === "admin" ? '<span class="role-pill role-admin">ADMIN</span>' : '<span class="role-pill role-agent">AGENT</span>';
   document.getElementById("filters").style.display = "block";
 
   const select = document.getElementById("agentSelect");
@@ -966,6 +1169,8 @@ async function loadDisputes() {
   div.innerHTML = html;
 }
 </script>
+
+<div class="fixed-badge">Volt QA System</div>
 
 </body>
 </html>
