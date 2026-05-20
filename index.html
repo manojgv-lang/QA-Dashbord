@@ -304,8 +304,15 @@ function showValue(value) {
   return value;
 }
 
+/* UPDATED buildEmailHtml – filters out idle/ideal calls before picking bottom two */
 function buildEmailHtml(data) {
-  const sortedCalls = [...data.calls].sort((a, b) => Number(a.score || 0) - Number(b.score || 0));
+  const sortedCalls = [...data.calls]
+    .filter(call => {
+      const issueType = String(call.queryType || "").toLowerCase().trim();
+      return issueType !== "idle call" && issueType !== "ideal call";
+    })
+    .sort((a, b) => Number(a.score || 0) - Number(b.score || 0));
+
   const selectedCalls = sortedCalls.slice(0, 2);
 
   while (selectedCalls.length < 2) {
@@ -905,6 +912,7 @@ async function loadDisputes() {
   html += `</tbody></table>`;
   div.innerHTML = html;
 }
+
 </script>
 
 </body>
