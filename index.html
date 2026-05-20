@@ -27,7 +27,7 @@
     .pending { background:#fff8e1; }
     .summary-box { background:#f1f8e9; border-left:5px solid #4caf50; border-radius:10px; padding:18px; margin-top:22px; line-height:1.6; font-size:15px; }
     .category-title { margin-top:24px; background:#f3e5f5; padding:10px; border-radius:8px; font-weight:bold; }
-    .loading { color:#1976d2; font-weight:bold; margin-top:12px; }
+    .loading { color:#1976d2; font-weight:bold; margin-top:12px; white-space:pre-line; }
     .all-agent-table { width:100%; border-collapse:separate; border-spacing:0 8px; margin-top:18px; }
     .all-agent-table th { background:#e8eefc; color:#111827; font-size:14px; padding:12px; text-align:center; border:none; }
     .all-agent-table td { background:#ffffff; border-top:1px solid #dbe3f0; border-bottom:1px solid #dbe3f0; padding:14px; font-size:14px; vertical-align:middle; }
@@ -82,7 +82,7 @@
 </div>
 
 <div class="card" id="adminFilters" style="display:none;">
-  <h2>All Agent Summary</h2>
+  <h2>All Agent Summary / Bulk Email</h2>
 
   <div class="grid-2">
     <div>
@@ -96,6 +96,7 @@
   </div>
 
   <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
+  <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
   <p id="allAgentStatus" class="loading"></p>
 </div>
 
@@ -290,6 +291,43 @@ async function sendReportEmail() {
   setLoading("reportStatus", "Email sent successfully.");
 }
 
+async function bulkSendReports() {
+  const from = document.getElementById("allFromDate").value;
+  const to = document.getElementById("allToDate").value;
+
+  if (!from || !to) {
+    alert("Please select From Date and To Date for bulk report.");
+    return;
+  }
+
+  const confirmSend = confirm("This will send QA report emails to all mapped agents for selected date range. Continue?");
+  if (!confirmSend) return;
+
+  setLoading("allAgentStatus", "Sending bulk reports to all agents...");
+
+  const data = await apiCall({
+    action: "bulkSendAgentReports",
+    email: CURRENT_USER,
+    from: from,
+    to: to
+  });
+
+  if (!data.ok) {
+    alert(data.error);
+    setLoading("allAgentStatus", "");
+    return;
+  }
+
+  let msg = data.message || "Bulk email completed.";
+
+  if (data.skipped && data.skipped.length) {
+    msg += "\n\nSkipped:\n" + data.skipped.join("\n");
+  }
+
+  alert(msg);
+  setLoading("allAgentStatus", msg);
+}
+
 function sanitizeEmailText(text) {
   if (!text) return "";
   return String(text)
@@ -304,7 +342,6 @@ function showValue(value) {
   return value;
 }
 
-/* UPDATED buildEmailHtml – filters out idle/ideal calls before picking bottom two */
 function buildEmailHtml(data) {
   const sortedCalls = [...data.calls]
     .filter(call => {
@@ -365,7 +402,7 @@ function buildEmailHtml(data) {
         </tr>
       </table>
 
-      <p style="margin:0 0 14px 0;"><b>Note:</b> Both calls still there is room to improve for better results in future conversations.</p>
+      <p style="margin:0 0 14px 0;"><b>Note:</b> Lowest scored calls for the selected audit period are shared below.</p>
 
       <table cellpadding="0" cellspacing="0" style="width:900px;border-collapse:collapse;text-align:center;table-layout:fixed;margin-bottom:14px;">
         ${emailCompareRow("Agent Name", c1.agentName, c2.agentName)}
@@ -912,7 +949,6 @@ async function loadDisputes() {
   html += `</tbody></table>`;
   div.innerHTML = html;
 }
-
 </script>
 
 </body>
