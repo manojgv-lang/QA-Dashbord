@@ -346,7 +346,23 @@ function buildEmailHtml(data) {
   const sortedCalls = [...data.calls]
     .filter(call => {
       const issueType = String(call.queryType || "").toLowerCase().trim();
-      return issueType !== "idle call" && issueType !== "ideal call";
+
+      const hasDetails =
+        call.queryType &&
+        call.concernsInDetail &&
+        call.callOpeningRating &&
+        call.score1 &&
+        call.issueUnderstandingText &&
+        call.score2 &&
+        call.resolutionPitchedText &&
+        call.score3 &&
+        call.followedProcessText &&
+        call.score4 &&
+        call.communicationText &&
+        call.score5 &&
+        call.finalScore;
+
+      return issueType !== "idle call" && issueType !== "ideal call" && hasDetails;
     })
     .sort((a, b) => Number(a.score || 0) - Number(b.score || 0));
 
@@ -361,7 +377,7 @@ function buildEmailHtml(data) {
   const m = data.metrics || {};
 
   return `
-    <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5;">
+    <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5%;">
       <p style="margin:0 0 14px 0;">PFB the Audit Reviews for the calls catered in the mentioned week</p>
 
       <table cellpadding="0" cellspacing="0" style="width:900px;border-collapse:collapse;text-align:center;table-layout:fixed;margin-bottom:14px;">
