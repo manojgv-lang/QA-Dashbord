@@ -7,608 +7,304 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-  <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-  * { box-sizing: border-box; }
-
-  :root {
-    --bg: #07111f;
-    --panel: rgba(255,255,255,0.055);
-    --panel-strong: rgba(255,255,255,0.085);
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --border: rgba(255,255,255,0.11);
-    --cyan: #22d3ee;
-    --cyan-strong: #06b6d4;
-    --blue: #2563eb;
-    --green: #34d399;
-    --red: #fb7185;
-    --amber: #fbbf24;
-    --shadow: 0 24px 70px rgba(0,0,0,0.32);
-    --radius: 28px;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    margin: 0;
-    font-family: 'Inter', Arial, sans-serif;
-    color: var(--text);
-    background:
-      radial-gradient(circle at top right, rgba(59,130,246,0.22), transparent 35%),
-      radial-gradient(circle at bottom left, rgba(168,85,247,0.18), transparent 30%),
-      radial-gradient(circle at 50% 0%, rgba(34,211,238,0.10), transparent 32%),
-      #07111f;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 44px 44px;
-    pointer-events: none;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 82%);
-    z-index: -1;
-  }
-
-  .app-shell {
-    display: flex;
-    min-height: 100vh;
-    position: relative;
-    z-index: 1;
-  }
-
-  .side-nav {
-    width: 92px;
-    min-height: 100vh;
-    position: sticky;
-    top: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 12px;
-    border-right: 1px solid var(--border);
-    background: rgba(255,255,255,0.045);
-    backdrop-filter: blur(22px);
-  }
-
-  .nav-logo {
-    height: 58px;
-    width: 58px;
-    border-radius: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #22d3ee, #2563eb);
-    box-shadow: 0 20px 45px rgba(37,99,235,0.42);
-    font-size: 28px;
-    font-weight: 900;
-    color: white;
-  }
-
-  .nav-stack {
-    margin-top: 42px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .nav-dot-btn {
-    height: 54px;
-    width: 54px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.055);
-    color: #cbd5e1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 21px;
-    box-shadow: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .nav-dot-btn:hover {
-    transform: translateY(-2px);
-    background: var(--cyan-strong);
-    color: #00111a;
-    box-shadow: 0 16px 36px rgba(34,211,238,0.25);
-  }
-
-  .nav-bottom {
-    margin-top: auto;
-  }
-
-  .main-stage {
-    flex: 1;
-    padding: 28px;
-    max-width: 1540px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 26px;
-    margin-bottom: 22px;
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(22px);
-    animation: fadeUp 0.45s ease both;
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .main-stage > .card:first-child {
-    background:
-      linear-gradient(135deg, rgba(34,211,238,0.18), rgba(37,99,235,0.14) 45%, rgba(255,255,255,0.06)),
-      rgba(255,255,255,0.055);
-    border: 1px solid rgba(34,211,238,0.22);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .main-stage > .card:first-child::after {
-    content: "";
-    position: absolute;
-    top: -80px;
-    right: -70px;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: rgba(34,211,238,0.19);
-    filter: blur(22px);
-    animation: pulseGlow 4s ease-in-out infinite;
-  }
-
-  @keyframes pulseGlow {
-    0%, 100% { transform: scale(1); opacity: 0.55; }
-    50% { transform: scale(1.12); opacity: 0.88; }
-  }
-
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-bottom: 22px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .logo {
-    width: 76px;
-    height: 76px;
-    border-radius: 26px;
-    box-shadow: 0 22px 48px rgba(34,211,238,0.30);
-    object-fit: cover;
-    border: 1px solid rgba(255,255,255,0.20);
-  }
-
-  .page-title {
-    font-size: 42px;
-    font-weight: 900;
-    letter-spacing: -0.05em;
-    color: #ffffff;
-    line-height: 1.05;
-  }
-
-  .page-subtitle {
-    color: #a5f3fc;
-    margin-top: 7px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .user-info {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 18px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .info-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(0,0,0,0.23);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-size: 14px;
-    color: #e2e8f0;
-  }
-
-  .info-pill b { color: #ffffff; }
-
-  .role-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 0.05em;
-  }
-
-  .role-admin { background: rgba(34,211,238,0.15); color: #67e8f9; border:1px solid rgba(34,211,238,0.25); }
-  .role-agent { background: rgba(52,211,153,0.14); color: #86efac; border:1px solid rgba(52,211,153,0.22); }
-
-  h1, h2, h3 { margin-top: 0; }
-
-  h2 {
-    font-size: 25px;
-    margin-bottom: 20px;
-    letter-spacing: -0.03em;
-    color: #ffffff;
-    font-weight: 900;
-  }
-
-  h3 {
-    font-size: 18px;
-    color: #e2e8f0;
-    font-weight: 850;
-  }
-
-  label {
-    display: block;
-    color: #cbd5e1;
-    font-weight: 800;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-
-  select, input, textarea {
-    width: 100%;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 17px;
-    background: rgba(0,0,0,0.25);
-    color: #ffffff;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s ease;
-  }
-
-  select option { color: #0f172a; background: #ffffff; }
-
-  select:focus, input:focus, textarea:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 4px rgba(34,211,238,0.12);
-    background: rgba(0,0,0,0.34);
-  }
-
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.75;
-  }
-
-  textarea::placeholder, input::placeholder { color: #64748b; }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-
-  button {
-    border: 0;
-    border-radius: 17px;
-    padding: 13px 20px;
-    background: linear-gradient(135deg, #22d3ee, #2563eb);
-    color: #00111a;
-    font-weight: 900;
-    font-size: 13px;
-    cursor: pointer;
-    margin-right: 10px;
-    margin-top: 4px;
-    box-shadow: 0 12px 28px rgba(34,211,238,0.18);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
-  }
-
-  button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 18px 34px rgba(34,211,238,0.26);
-  }
-
-  button:active { transform: translateY(0); }
-  button:disabled { opacity: 0.55; cursor: not-allowed; }
-
-  .green-btn {
-    background: linear-gradient(135deg, #34d399, #10b981);
-    color: #02140e;
-    box-shadow: 0 12px 28px rgba(52,211,153,0.18);
-  }
-
-  .danger {
-    background: linear-gradient(135deg, #fb7185, #e11d48);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(244,63,94,0.18);
-  }
-
-  .coming-soon-btn {
-    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
-    border: 1px solid rgba(255,255,255,0.13);
-    color: #ffffff;
-    box-shadow: none;
-  }
-
-  .loading {
-    color: #67e8f9;
-    font-weight: 850;
-    margin-top: 12px;
-    white-space: pre-line;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 18px;
-    background: rgba(0,0,0,0.22);
-    border: 1px solid rgba(255,255,255,0.11);
-    border-radius: 22px;
-    overflow: hidden;
-    box-shadow: 0 16px 42px rgba(0,0,0,0.22);
-  }
-
-  th {
-    background: rgba(255,255,255,0.06);
-    color: #67e8f9;
-    font-size: 13px;
-    font-weight: 900;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-  }
-
-  td {
-    padding: 14px 15px;
-    font-size: 13px;
-    vertical-align: top;
-    border-bottom: 1px solid rgba(255,255,255,0.075);
-    line-height: 1.58;
-    color: #e2e8f0;
-  }
-
-  tr:last-child td { border-bottom: 0; }
-  tr:hover td { background: rgba(255,255,255,0.045); }
-
-  .good { background: rgba(16,185,129,0.10); }
-  .bad { background: rgba(244,63,94,0.10); }
-  .pending { background: rgba(245,158,11,0.10); }
-
-  .summary-box {
-    background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(255,255,255,0.04));
-    border: 1px solid rgba(34,211,238,0.19);
-    border-left: 6px solid var(--cyan);
-    border-radius: 24px;
-    padding: 24px;
-    margin-top: 24px;
-    line-height: 1.75;
-    box-shadow: 0 16px 42px rgba(34,211,238,0.08);
-  }
-
-  .category-title {
-    margin-top: 24px;
-    background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(37,99,235,0.12));
-    border: 1px solid rgba(34,211,238,0.16);
-    color: #67e8f9;
-    padding: 14px 16px;
-    border-radius: 18px;
-    font-weight: 900;
-  }
-
-  .all-agent-table {
-    border-collapse: separate;
-    border-spacing: 0 10px;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .all-agent-table th {
-    background: rgba(34,211,238,0.10);
-    border-bottom: 0;
-  }
-
-  .all-agent-table td {
-    background: rgba(255,255,255,0.055);
-    border-top: 1px solid rgba(255,255,255,0.10);
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-  }
-
-  .all-agent-table tr td:first-child { border-left: 1px solid rgba(255,255,255,0.10); border-radius: 18px 0 0 18px; }
-  .all-agent-table tr td:last-child { border-right: 1px solid rgba(255,255,255,0.10); border-radius: 0 18px 18px 0; }
-
-  .agent-name-cell { font-weight: 900; color: #ffffff; }
-  .number-cell { font-weight: 900; text-align: center; color:#ffffff; }
-  .details-cell { text-align: center; }
-  .details-btn { margin: 0; padding: 9px 14px; border-radius: 13px; }
-
-  .category-detail-row td {
-    border-radius: 20px !important;
-    background: rgba(255,255,255,0.055) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-  }
-
-  .category-detail-box {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-
-  .category-item {
-    background: rgba(0,0,0,0.23);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 16px;
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 13px;
-    color: #e2e8f0;
-  }
-
-  .mini-table { max-width: 720px; }
-  .chart-count { font-weight: 900; text-align: center; }
-  .score-good { color: #34d399; font-weight: 900; text-align: center; }
-  .score-bad { color: #fb7185; font-weight: 900; text-align: center; }
-
-  #disputePopup,
-  #resolutionResponsePopup,
-  #activityPopup {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(2,6,23,0.76);
-    backdrop-filter: blur(10px);
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-
-  .popup {
-    background: #081120;
-    color: #f8fafc;
-    width: 430px;
-    max-width: 94%;
-    padding: 26px;
-    border-radius: 26px;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 34px 80px rgba(0,0,0,0.42);
-  }
-
-  a { color: #67e8f9; font-weight: 900; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-
-  .fixed-badge {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    background: rgba(255,255,255,0.08);
-    color: #cbd5e1;
-    border: 1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(12px);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-size: 12px;
-    font-weight: 850;
-    z-index: 999;
-  }
-
-  @media (max-width: 1100px) {
-    .side-nav { display: none; }
-    .main-stage { padding: 18px; }
-  }
-
-  @media (max-width: 900px) {
-    .grid-2 { grid-template-columns: 1fr; gap: 0; }
-    .topbar { align-items: flex-start; }
-    .page-title { font-size: 30px; }
-    .logo { width: 64px; height: 64px; }
-    .category-detail-box { grid-template-columns: 1fr; }
-    table { display: block; overflow-x: auto; }
-    button { margin-bottom: 8px; }
-  }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+:root {
+  --bg:#f6f8fb;
+  --panel:#ffffff;
+  --text:#111827;
+  --muted:#64748b;
+  --border:#e5e7eb;
+  --blue:#1d5cff;
+  --blue-dark:#0f3fd9;
+  --nav:#ffffff;
+  --shadow:0 14px 35px rgba(15,23,42,.08);
+  --radius:18px;
+}
+body {
+  margin:0;
+  font-family:'Inter',Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+.app-shell { display:flex; min-height:100vh; width:100%; }
+.sidebar {
+  width:260px;
+  min-width:260px;
+  background:var(--nav);
+  border-right:1px solid #e6eaf0;
+  padding:18px 16px;
+  position:sticky;
+  top:0;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.brand { display:flex; align-items:center; gap:12px; padding:4px 0 18px; }
+.brand-logo { width:46px; height:46px; border-radius:15px; box-shadow:0 9px 20px rgba(29,92,255,.25); object-fit:cover; }
+.brand-title { font-size:18px; font-weight:800; letter-spacing:-.02em; }
+.brand-sub { margin-top:2px; font-size:12px; color:#64748b; }
+.nav-menu { display:flex; flex-direction:column; gap:10px; }
+.nav-item {
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#334155;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:13px 14px;
+  border-radius:14px;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  box-shadow:none;
+  margin:0;
+  transition:.18s ease;
+}
+.nav-item:hover { background:#f1f5ff; transform:none; box-shadow:none; }
+.nav-item.active { background:linear-gradient(135deg,#1d5cff,#0f64ff); color:white; box-shadow:0 10px 22px rgba(29,92,255,.22); }
+.nav-left { display:flex; align-items:center; gap:11px; }
+.nav-icon { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; }
+.nav-arrow { opacity:.8; font-size:20px; line-height:1; }
+.sidebar-card {
+  margin-top:auto;
+  background:#0f172a;
+  color:white;
+  border-radius:18px;
+  padding:18px 14px;
+  box-shadow:0 16px 35px rgba(15,23,42,.20);
+}
+.sidebar-card h4 { margin:0 0 6px; font-size:14px; }
+.sidebar-card p { margin:0 0 12px; font-size:12px; color:#cbd5e1; line-height:1.45; }
+.sidebar-card button { width:100%; background:white; color:#0f172a; box-shadow:none; border-radius:12px; padding:11px 12px; margin:0; }
+.main { flex:1; min-width:0; }
+.top-header {
+  background:white;
+  border-bottom:1px solid #e6eaf0;
+  padding:20px 30px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.page-title { margin:0; font-size:25px; font-weight:800; letter-spacing:-.03em; color:#111827; }
+.page-subtitle { margin-top:4px; color:#64748b; font-size:13px; }
+.header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.btn-light, .btn-primary, .btn-dark {
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:11px 17px;
+  margin:0;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+}
+.btn-light { background:white; color:#0f172a; box-shadow:0 8px 18px rgba(15,23,42,.05); }
+.btn-primary { background:#1d5cff; color:white; border-color:#1d5cff; box-shadow:0 10px 20px rgba(29,92,255,.20); }
+.btn-dark { background:#0f172a; color:white; border-color:#0f172a; box-shadow:0 10px 20px rgba(15,23,42,.18); }
+.btn-light:hover,.btn-primary:hover,.btn-dark:hover { transform:translateY(-1px); }
+.content { padding:28px 30px 60px; }
+.view-panel { display:block; }
+.coming-panel { display:none; }
+.card, .panel-card {
+  background:white;
+  border:1px solid #e6eaf0;
+  border-radius:20px;
+  padding:22px;
+  margin-bottom:20px;
+  box-shadow:0 10px 24px rgba(15,23,42,.06);
+}
+.card:hover, .panel-card:hover { box-shadow:0 14px 32px rgba(15,23,42,.08); }
+#filters, #adminFilters { display:none; }
+#filters, #adminFilters, #summary, #allAgentSummary, #calls, #disputes { scroll-margin-top:105px; }
+h1,h2,h3 { margin-top:0; }
+h2 { font-size:19px; margin-bottom:18px; color:#111827; letter-spacing:-.02em; }
+h3 { font-size:16px; color:#1e293b; }
+label { display:block; color:#64748b; font-size:11px; font-weight:800; text-transform:uppercase; margin-bottom:7px; }
+select,input,textarea {
+  width:100%;
+  border:1px solid #dfe5ef;
+  border-radius:13px;
+  padding:13px 14px;
+  font-size:14px;
+  color:#111827;
+  background:#fff;
+  outline:none;
+  margin-bottom:16px;
+}
+select:focus,input:focus,textarea:focus { border-color:#1d5cff; box-shadow:0 0 0 4px rgba(29,92,255,.10); }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+button {
+  border:0;
+  border-radius:12px;
+  padding:12px 18px;
+  background:#1d5cff;
+  color:white;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  margin-right:10px;
+  margin-top:4px;
+  box-shadow:0 8px 18px rgba(29,92,255,.16);
+  transition:.18s ease;
+}
+button:hover { transform:translateY(-1px); box-shadow:0 12px 24px rgba(29,92,255,.24); }
+button:disabled { opacity:.55; cursor:not-allowed; }
+.green-btn { background:#0ea665; box-shadow:0 8px 18px rgba(14,166,101,.16); }
+.danger { background:#dc2626; box-shadow:0 8px 18px rgba(220,38,38,.16); }
+.coming-soon-btn { background:#0f172a; box-shadow:0 8px 18px rgba(15,23,42,.16); }
+.loading { color:#1d5cff; font-weight:800; margin-top:12px; white-space:pre-line; }
+.user-strip { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.info-pill { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:999px; padding:8px 12px; font-size:13px; }
+.role-pill { display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.04em; }
+.role-admin { background:#dbeafe; color:#1d4ed8; }
+.role-agent { background:#dcfce7; color:#15803d; }
+.quick-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.quick-card { background:white; border:1px solid #e6eaf0; border-radius:18px; padding:18px; box-shadow:0 10px 22px rgba(15,23,42,.05); }
+.quick-label { color:#64748b; font-size:12px; font-weight:700; }
+.quick-value { margin-top:8px; font-size:27px; font-weight:900; }
+.quick-sub { margin-top:6px; font-size:12px; color:#64748b; }
+.coming-box { display:none; background:white; border:1px dashed #cbd5e1; border-radius:20px; padding:34px; text-align:center; color:#475569; box-shadow:0 10px 24px rgba(15,23,42,.05); }
+.coming-box h2 { margin-bottom:8px; }
+table { width:100%; border-collapse:separate; border-spacing:0; margin-top:18px; background:white; border:1px solid #e6eaf0; border-radius:16px; overflow:hidden; box-shadow:0 9px 20px rgba(15,23,42,.04); }
+th { background:#f8fafc; color:#334155; font-size:12px; font-weight:900; padding:14px; text-align:left; border-bottom:1px solid #e6eaf0; }
+td { padding:13px 14px; font-size:13px; vertical-align:top; border-bottom:1px solid #eef2f7; line-height:1.55; }
+tr:last-child td { border-bottom:0; }
+tr:hover td { background:#f8fbff; }
+.good { background:#ecfdf5; }
+.bad { background:#fff1f2; }
+.pending { background:#fffbeb; }
+.summary-box { background:#f8fbff; border:1px solid #dbeafe; border-left:5px solid #1d5cff; border-radius:18px; padding:20px; margin-top:22px; line-height:1.7; }
+.category-title { margin-top:20px; background:#eef6ff; border:1px solid #dbeafe; color:#1e3a8a; padding:13px 15px; border-radius:14px; font-weight:900; }
+.all-agent-table { border-spacing:0 10px; border:0; background:transparent; box-shadow:none; }
+.all-agent-table th { background:#f1f5f9; border-bottom:0; }
+.all-agent-table td { background:white; border-top:1px solid #e6eaf0; border-bottom:1px solid #e6eaf0; }
+.all-agent-table tr td:first-child { border-left:1px solid #e6eaf0; border-radius:14px 0 0 14px; }
+.all-agent-table tr td:last-child { border-right:1px solid #e6eaf0; border-radius:0 14px 14px 0; }
+.agent-name-cell { font-weight:900; }
+.number-cell,.details-cell,.chart-count { text-align:center; font-weight:800; }
+.details-btn { margin:0; padding:9px 13px; border-radius:11px; }
+.category-detail-row td { border-radius:16px!important; background:#f8fafc!important; border:1px solid #e6eaf0!important; }
+.category-detail-box { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.category-item { background:white; border:1px solid #e6eaf0; border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; gap:10px; font-size:13px; }
+.score-good { color:#15803d; font-weight:900; text-align:center; }
+.score-bad { color:#dc2626; font-weight:900; text-align:center; }
+a { color:#1d5cff; font-weight:800; text-decoration:none; }
+a:hover { text-decoration:underline; }
+#disputePopup,#resolutionResponsePopup { display:none; position:fixed; inset:0; background:rgba(15,23,42,.58); backdrop-filter:blur(8px); align-items:center; justify-content:center; z-index:9999; }
+.popup { background:white; width:430px; max-width:94%; padding:26px; border-radius:22px; box-shadow:0 30px 70px rgba(0,0,0,.26); }
+@media(max-width: 980px){ .app-shell{display:block;} .sidebar{position:relative;width:100%;height:auto;min-width:0;} .main{width:100%;} .quick-grid{grid-template-columns:1fr 1fr;} .top-header{position:relative;flex-direction:column;align-items:flex-start;} .content{padding:18px;} .grid-2{grid-template-columns:1fr;} .category-detail-box{grid-template-columns:1fr;} table{display:block;overflow-x:auto;} }
 </style>
 </head>
 
 <body>
 <div class="app-shell">
-  <aside class="side-nav" aria-label="Dashboard navigation">
-    <div class="nav-logo">V</div>
-    <div class="nav-stack">
-      <button class="nav-dot-btn" title="Dashboard" type="button">⌂</button>
-      <button class="nav-dot-btn" title="Reports" type="button">◫</button>
-      <button class="nav-dot-btn" title="Disputes" type="button">!</button>
-      <button class="nav-dot-btn" title="Email" type="button">✉</button>
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-logo" src="data:image/png;base64,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" alt="Volt Logo">
+      <div>
+        <div class="brand-title">Volt QA Hub</div>
+        <div class="brand-sub">Audit performance tool</div>
+      </div>
     </div>
-    <div class="nav-bottom">
-      <button class="nav-dot-btn" title="Theme" type="button">◐</button>
+
+    <nav class="nav-menu">
+      <button class="nav-item active" id="navAgent" onclick="showDashboardView('agent')">
+        <span class="nav-left"><span class="nav-icon">▥</span> Agent Report Filters</span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navAll" onclick="showDashboardView('all')">
+        <span class="nav-left"><span class="nav-icon">👥</span> All Agent Summary / Bulk Email</span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navCharts" onclick="showComingSoon('Report and Charts')">
+        <span class="nav-left"><span class="nav-icon">▣</span> Report and Charts</span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navDisputes" onclick="openDisputeDetailsView()">
+        <span class="nav-left"><span class="nav-icon">✉</span> Dispute Details</span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navActivity" onclick="showComingSoon('Activity Logs')">
+        <span class="nav-left"><span class="nav-icon">☰</span> Activity Logs</span><span class="nav-arrow">›</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-card">
+      <h4>Weekly auto summary</h4>
+      <p>Admin can trigger bulk reports after date selection.</p>
+      <button onclick="showDashboardView('all')">➤ Trigger Now</button>
     </div>
   </aside>
-  <main class="main-stage">
 
-<div class="card">
-  <div class="topbar">
-    <img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAIAAACx0UUtAAAToUlEQVR4Ae2dT0gb6RvHh5wCOQWCnjwZ8RISiAEPgkgvYqlQUKSnHDyUFaQUJellQdgiJJfdyx6WvRSWPfSyhx7bW2EhZsYNlahrsbhOwW6XpbBqlzVYnN++v8ffNL9kTOZ98yTzzMyzhGUcdTq+72eed573+/zREjmDPzwClEdAo3xzfG88AomcwYzyMkJ9BJhR6jPEppQZZUapjwAzSn2G2I4yo8wo9RFgRqnPENtRZpQZpT4CzCj1GWI7yowyo9RHgBmlPkNsR5lRZpT6CDCj1GeI7SgzyoxSHwFmlPoMsR1lRplR6iPAjFKfIbajzCgzSn0EmFHqM8R2lBllRqmPADNKfYbYjjKjzCj1EWBGqc8Q21FmlBmlPgLMKPUZYjvKjDKj1EeAGaU+Q2xHmVFmlPoIMKPUZ4jtKDPKjFIfAWaU+gyxHWVGmVHqI8CMUp8htqPMKDNKfQSYUeozxHaUGWVGqY8AM0p9htiOMqPMKPURYEapzxDbUWaUGaU+Aswo9RliO8qMMqPUR4AZpT5DbEeZUWaU+ggwo9RnqMWOxrNGLKNH03ok1f0TzxraeFUbqvT0SVbjWS9HiRn1cvRb+Ov6ZSyjJ3LGneX95UdvVjeOun7iWeOb799eNK5Ozy6VP8+e/zk8uQ3/dNc77McPMKO+YTSW0aeX6oWSWSiZa5vHnT+Fknn3/kEiZ1gY/x29/Sea1r2ypsyoPxiNZ42pRQFoZzTt765uHGnJ6ouXHzAQFddYfvQmkhJWfPAfZtSDQZed5njWGJ7ctvnrelAomVOL9dv5XSxALcv66uvftPGq7J2j/Dwz6gNGIyn93oPX7o3oF18eaSNbtd1zREZv53e9eiVlRqkzGs8amblX7gEtls3hye1i2UQE9MXLD1rSGyOayBnMqA8YXX70puv6Dj9QKJn3HrzWxqunZ5dYjF40ribmd7wyoswodUBjGX02v+feiK5tHkdS+pOn77AAtSzrydN3HhpRZpQ0o+AqPXzcZZvJNrGFkjmb3xue3EYE9PTsUhvZ8mrXCVwuXuvpYhpN6wsrB+6NqNhvGqr8rP+FyOjqxpFXW072ngAzSpTReNYYu1Urlt1uiBZK5sT8Tn79EBHQ2u6550aU13qigCZyRiSlu3eV1jaPlx+90ZLVXw//RmR0Nr8XTXuzb28bUWaUKKO27Gm/a3Y+KJbNf7H+6uvfEAF9+uwPb10lG1Ne68lhCq7S6sZRZy7t74I0H88aF40rLEbPP34anal56yoxo+TQtKckltHv3pdwlR4+PtbGq0+f/YEFqGVZpW9NIkaU13pypMazxuhMzb0vXyiZ00v1ifkdREBP3je0RMV+Zjw/4LWeFqayrpKQ5ocquNL8wsqB5/tNzQ8GM0qI0VhGn1qsu99vKpbNsVu11Y0jRCMK0jyRN1EglRmlwmg8a8SzhpSrlF8/1JLVk/cNREanFuseSvPN5tM+ZkapMCqrKhVKZiyjf/P9W0RAv/vhhI6rxIxSQRNmAlQlezup60GhZN5Z3o+kdERAT88uIynPEkJsItsP2I6SgDWa1vPrh+7deSHNj2whpoJYlrW2Kfaw2hHx/Awz6j2j8awxMb/j3lWC/abppTqiEf318G9tiNB+U/ODwYx6zKisq3QtzQ9VcKX52/ldCtJ8M5r2MTPqMaOxjH5ned/9Kl8sm6MzIh4K0Yg+e/4nQVeJGfUYTZgAUJW6ekj2D/QjFeT846exWzVq+002oKyFekxqLCPnKkEqyHc/nCAa0W++f0vZiDKjXjIKrpL7Vb4fqSDUpPlm82kf8/uoZ5hG07p7VWlt8xj2m3BTQe49eE1Kmre5bD5gRr1hVDbhE1JBFlYOEFf5yi+n2shWMw00j5lRDxiVdZWu95tGto7e/oPIqLdZ8+6fB2bUA0ZjGbnaOIWSKD2CmwriedY8UUbt+q7RtKjy2uEDO9tasqqNbPX6SVZJydCytXEKJXNh5SCa1hFTQU7PLmGE3YPi4U8Ozo5Cms7d+wf59cOun+klESH24uWH2u55j58XLz+At0FER4ll9C++dJurtLZ53I9UkGLZpCnNOz4JA2LULrnhZqsFfubfWtqIq9vp2eVsfs/ziQFXSVaax00FOXr7D6lUEEcum08OiFFZxQ8WOG1kC1GVvmhceZswDg+qLRq5OehTlUYiS0oziB2OB8RoNC3nJaxtHhdKQpjGLfTq7Za17CAUy2Zm7tUXX2KmghCX5h1JHRCjsYx+O7/rZqFvti6i9kaighsl6VVWroKrhJ4KctG4ysy9oizNe8koeJHuS8ABqcWyqJk9PLmN6NJeNK5GZzwIoYhnDSlXaW3zOJ41wibNe8loIie6CkklPQKmwqtNVnGzdkTq42D1FdnaOHZXEMSHU7zneN1pyRHBricHtNbDfcQyos6W1IoPiTvaOHL24937g0shhzWk+R2m67F4MrFTQfLrh/SleUdeB8qobGYZzCWoLLhVC0VqxKCMimzHBegKcmd5H1H29Is07z2jsOJL1X0FB194DwnkahyD2ceWdZXWNo9hvwlx082yLIJZ8444Op4cqB1N5ESZg+HJbVnnqVASuzCZuVeIpuWicTUAjTSeNaTKiMKOW6GEmQry40+/E49idkTTPjloRsGUzub33GstsOKDdcGtDidKbPbTeVJwldC7gpyeXQ5PbpOqjWPD5/LAA0ahSLHsRkyxLBoSRNM6YlcXy7Jm83t98iTUVgz0riAe9qdziWDXH/OGUYW3NLCmkZSOmxIpSr73x3mKpuXKiEIqCO77jO+keUdevWEUVnyp/oLgPC2sHGjYob4iKgq7PgfsYEjtsvWj9Mggt9gc8UI56RmjEIuu4DyNztTu3sdMmTj/+AndlEbTch0XwCm89+A1olPobQNFFDrhIp4xCqZUqvwBmNJ+iPjC88VznmRdJbsrCGIqiE+leUeyvWQUMJXKjQRMQcRHNDmWZWEl94CrJPVH9SMVhGaVRkcEu570mFHZclzgOYlXN2wR/2f9LxRTqhwpy9L8TbB6zGgiZ8iWNQRTemd5H13EX370psd9KHjJltr6haCZZ8//RFwW/CvNO2LqPaMKibxgTRM5Ee2GOLUiMmi82st2dyQlVxsH9pumFjGrNIrdNEpdQRyxkzrpPaPwVirVkQhMqZBksEX8XoofQfCh1H4TiGeVX04RnzRfS/OO7JJgFEyXlJ8BmGbmXuEaIcuy1JRDhT8BuoLgLgV0Gig60qZ2kgSjYEoVIqDBDv340++IdkjNeVJwldBTQQIgzTtCTIVRhU7DYEqnl+rxrHH+8RMiprKVuhReqQslM541cPMLvErVcgQL8SQhRhX0Q3CetPEqYia+ZVkiAlrGeVJwle7eP9CSVcTnSjh8Q5VeHD5EqnAvRYhRWPEVIqD7IeK7DxdS2OLtRyoItMLBhYPI1WgxqhbPBnHBuHUPLxpXLisiSTWng/eTqcU6bsjB4LMIB4kvLUbBlM7m96R2cAolE0R83PqxolxCNxE/mpauGyD8vGQVtwstlpA7SPLc/1vkGAVMZSOgoYTs8OQ24hueZVnTS/UOZWcUXCXoCoK73xQkad4RXIqMgvMkpShel+JOVnGLJnSOgFYoIwqpIIi7EL1rY45YkDpJkVEQ8RUioG/nd9FF/JvSRxVcpbXN42hax32K+hGgTQpQun1FFJZR2IeKpvWHj48RV/ybysnKlhEFaX50poZ4b2KPLFjSvOPjQdSOKjtP/RDx2yOgZTsuXL+KDFVwvbrgSfM+YxS2fhScp8zcK9x+r5ZlNZebAxsvleVSLJsT8zu4pVYCKc37jFEoGDExvyO1D3Vd52OoghuRKZyn/+1DybpK/egKcnp2OTpTC6Sq1I4p3bUe7lVWZrRF/FgGs8mBZVliX/O/Amlm7pXUY1Ms43cF6SWGsB0C4meoMwoLqxQTdp8DXBH/5H0jmtYVXCUh1SariKkgkDUfEiNK169vfrJlw97AlAIZiJmWlmV998NJJKVLPTBCmh+v4r54BCNrvnmKOx9Tt6N2GTOFCOjhyW1cN8WyrNGZmvt8a9hvwu0KIsJbhyqdJzVg3/UBo7APNbVYlzJghZIJFSFxt3sAEZcPjHiFHUIuSdm8wxAwFm/6c/zBKChPCjWgJ+Z3cLfNLctaWDlws9sAqSCrG5hZgYGX5h0x9Q2jas4TZOLjyo/CZRnZyq8fdrDr11Y8iVki/SbFy3Feg3TSN4yCKVWIgIbqjbgVIUvfikyPzoz+e8OlbzFL3RZKfmqgiPiQ+IlRtQhoiOTAFfGhgc5N+dbQFUQbx0wFCYk070i2nxgF52l6Sdp5EiI+tu8CEdCOiii8YOC2PguJNB8ERmErSqrCPGyXjt0Se0aIMUcQAd2+2wBdQXBbSPqxgaIjbWonfWZHgVFZNfJaMccW8WH9bXlgIOUfsSvIReNq7JYHjfnUeOrHb/mPUcjEV4iAnl6q474jWpb11de/jc7UbOcJUkFwu4IENWvePc2+ZBScJwhqdv//1Y2jSErH9bVPzy4TOQMemELJhFQQxD0E/zZQdI9g15/0JaN2BLRUztO1u426Z2lZFnQ/srMAnjx9h/jWK1sxpet8+/EH/MooRP3IRkAXy2YiJ5p6IWIENaBn83t3lvdxE1NFA8WQSfOOj5BfGVWLgO6TiA/OkzayhVulMYTSfNAYBeWpsybZ/rYKmfi4sUiWZeXXD3G7gjx5+s7XDRQdaVM76WM7Cqa02a1uJ9LxDGwP4VaEPHnfQIxVDWqVxjAyCqbUfUAnIAthnVqyiuiA477g3pTUrzbHfv8tf9tRMKWJnOEyoLPZrEbTIqIely2Uq4VZmnd8nHzPqHIEtNjLHNlCFIRQAO1aZMpxFoN9MgiMAqYKEdCjMzXcipC9YxrsKo1qz1JAGIUyZs1LuZtjqAiJmxDXC6YQ8heehE+XyAaEUeUI6Omleiyj9wIW4u+GKmveJaD+yF12+cdA7R3HgM4ONrUfbR3VqD1534ikdDai7dMdHDtqR0BTEPEVMA1YA8V21JTPBIpR2IpqCejsYEThW30S8aUwDV4DRWUi238xgIzKRkBfi/jYhRelGGVpvh1N+0zQGAXnSSECuh9tHV1iCtF99pTwQcsIBJBRtQjofoj4bhhlab6FyPYvA8iocgT0bH5PS1YRGyq4YdR9s7L2yQvJmWAyCpiqifjF8uBEfCh5wvtNnR+2wDIKfT/sbLiu3v3nipADFPE793/qPHPh+W5gGVVzniCxczAiPkvzLh+zIDOq1kBHiPhDFdwqI+0vppw17xLQQGmhjn9zNK0rREBPLdZxs+faGQ1nlUbHOep6Msh2FP74WEaXdZ76LeKzNN+Vy+YfCD6j8awxtVhXEfFHtk7eN9pNYO9nxF7seLV5Gvi4wwgEn1HYh1JIH4XG9L0T2XIFIc1z1nzO6ABly7dCwahCBLQt4uOmzEPBiFhGb5kG/rLDCISCUdiHuqmk7U1bp4WSid7WkaX5Dize9K2wMKpWAxpE/KfP/mhZr9W+DFUDxZuAUzgfFkaVI6CFiD+yhdKljqs0KgAa/P3RlkGJpHTZMmYPHx9HUnrvbR1Zmm+ZC/dfhsiOQpT+2K3PJW1vehNtPl8omaKt48hWj6Vybud3Iyl2lSTceRvicDEKK75sBDQ0Tu5FxA9hA0WbsN4PQscoiPiy6aOQia8s4oe8oH2PmIaOUTCls/k92bA9ZRGfpXlmVOUVJ5qWdp7U2jqevG9A4n+P8xTmXw+jHQXnaWJ+R1bEv7O8r41sSVWEFGSzNC+jfLY/jSFldDAivqjSyNJ8b4CGbn+0+RlViIC+7m4zVHEp4rOr1DzgysfhtaNgSmUjoItlIeLP5ve6yqHQUFR5YvgX7REINaOQkCkbAS1E/G5tHblKo01Y7wehZhRMqYLz1FXEZ2m+dzTtK4SdUeg+KhsB3VnEF9L8eJWz5m3IejxgRg1wnmS39DuI+AsrByzN98hl868zo0ICiGX0hZUDWUyHJ7fz64ctzhM3UGzGC+WYGRWMQgS0rPPkKOKPztR4lUdB074IM3otpcYy+vSSdProxPzO2K2aHQHN0rwNFuIBM/pZ7ocVX0ogBREf+oFzlUZELpsvxYx+ZhReTGfze1CfrFAyu36KZVOI+EOVi8YVN1BsBgvxmBn9P0YB00TOmF6q371/4PITy+gcZo8IZculmNFWRsGFimeFs+/yY5PdMrj8JcoIMKMOjKKMLF8EawSYUWaU+ggwo9RnCMsa+fc6zCgzSn0EmFHqM+Rf+4d158woM0p9BJhR6jOEZY38ex1mlBmlPgLMKPUZ8q/9w7pzZpQZpT4CzCj1GcKyRv69DjPKjFIfAWaU+gz51/5h3TkzyoxSHwFmlPoMYVkj/16HGWVGqY8AM0p9hvxr/7DunBllRqmPADNKfYawrJF/r8OMMqPUR4AZpT5D/rV/WHfOjDKj1EeAGaU+Q1jWyL/XYUaZUeojwIxSnyH/2j+sO2dGmVHqI8CMUp8hLGvk3+swo8wo9RFgRqnPkH/tH9adM6PMKPURYEapzxCWNfLvdZhRZpT6CDCj1GfIv/YP686ZUWaU+ggwo9RnCMsa+fc6zCgzSn0EmFHqM+Rf+4d158woM0p9BJhR6jOEZY38ex1mlBmlPgLMKPUZ8q/9w7pzZpQZpT4CzCj1GcKyRv69DjPKjFIfAWaU+gz51/5h3fl/AKnDf5WuSS9DAAAAAElFTkSuQmCC" alt="Volt Logo">
-    <div>
-      <div class="page-title">QA Dashboard</div>
-      <div class="page-subtitle">Agent Audit Performance & Quality Management System</div>
-    </div>
-  </div>
+  <main class="main">
+    <header class="top-header">
+      <div>
+        <h1 class="page-title">QA Performance Dashboard</h1>
+        <div class="page-subtitle">Clean view for Admin, TL and QA login access</div>
+        <div class="user-strip">
+          <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
+          <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
+          <span id="mainStatus" class="loading"></span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="loginBtn" class="btn-light" onclick="login()">Login with Google</button>
+        <button class="btn-light" onclick="exportExcelComingSoon()">⇩ Export Excel</button>
+        <button class="btn-light" onclick="alert('Save PDF option is coming soon.')">▣ Save PDF</button>
+        <button class="btn-primary" onclick="sendReportEmail()">✉ Send Report</button>
+      </div>
+    </header>
 
-  <button id="loginBtn" onclick="login()">Login with Google</button>
+    <section class="content">
+      <div id="comingSoonBox" class="coming-box">
+        <h2 id="comingSoonTitle">Coming Soon</h2>
+        <p>This option will be added in the next phase.</p>
+      </div>
 
-  <div class="user-info">
-    <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
-    <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
-  </div>
+      <div id="viewAgent">
+        <div class="card" id="filters">
+          <h2>Agent Report Filters</h2>
+          <label>Agent</label>
+          <select id="agentSelect"></select>
+          <div class="grid-2">
+            <div><label>From Date</label><input type="date" id="fromDate"></div>
+            <div><label>To Date</label><input type="date" id="toDate"></div>
+          </div>
+          <button id="reportBtn" onclick="loadReport()">Run Report</button>
+          <button class="green-btn" onclick="sendReportEmail()">Send Report</button>
+          <button class="coming-soon-btn" onclick="exportExcelComingSoon()">Export Excel</button>
+          <p id="reportStatus" class="loading"></p>
+        </div>
+        <div class="card" id="summary" style="display:none;"></div>
+        <div class="card" id="calls" style="display:none;"></div>
+      </div>
 
-  <p id="mainStatus" class="loading"></p>
-</div>
+      <div id="viewAll" style="display:none;">
+        <div class="card" id="adminFilters">
+          <h2>All Agent Summary / Bulk Email</h2>
+          <div class="grid-2">
+            <div><label>From Date</label><input type="date" id="allFromDate"></div>
+            <div><label>To Date</label><input type="date" id="allToDate"></div>
+          </div>
+          <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
+          <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
+          <p id="allAgentStatus" class="loading"></p>
+        </div>
+        <div class="card" id="allAgentSummary" style="display:none;"></div>
+      </div>
 
-<div class="card" id="filters" style="display:none;">
-  <h2>Agent Report Filters</h2>
-
-  <label>Agent</label>
-  <select id="agentSelect"></select>
-
-  <div class="grid-2">
-    <div>
-      <label>From Date</label>
-      <input type="date" id="fromDate">
-    </div>
-    <div>
-      <label>To Date</label>
-      <input type="date" id="toDate">
-    </div>
-  </div>
-
-  <button id="reportBtn" onclick="loadReport()">Generate Agent Report</button>
-  <button class="green-btn" onclick="sendReportEmail()">Send Report</button>
-  <button class="coming-soon-btn" onclick="exportExcelComingSoon()">Export Excel</button>
-  <p id="reportStatus" class="loading"></p>
-</div>
-
-<div class="card" id="adminFilters" style="display:none;">
-  <h2>All Agent Summary / Bulk Email</h2>
-
-  <div class="grid-2">
-    <div>
-      <label>From Date</label>
-      <input type="date" id="allFromDate">
-    </div>
-    <div>
-      <label>To Date</label>
-      <input type="date" id="allToDate">
-    </div>
-  </div>
-
-  <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
-  <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
-  <p id="allAgentStatus" class="loading"></p>
-</div>
-
-<div class="card" id="summary" style="display:none;"></div>
-<div class="card" id="allAgentSummary" style="display:none;"></div>
-<div class="card" id="calls" style="display:none;"></div>
-<div class="card" id="disputes" style="display:none;"></div>
-
+      <div id="viewDisputes" style="display:none;">
+        <div class="card" id="disputes" style="display:none;"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -629,19 +325,10 @@
   <div class="popup">
     <h3>Not Satisfied with Resolution</h3>
     <p style="margin:10px 0 16px 0;color:#64748b;line-height:1.5;">Please mention why you are not satisfied with the QA resolution. This will notify QA and the agent over email.</p>
-
-    <label>Agent</label>
-    <input type="text" id="responseAgent" disabled>
-
-    <label>SL No</label>
-    <input type="text" id="responseSlNo" disabled>
-
-    <label>QA Resolution</label>
-    <textarea id="responseResolution" rows="3" disabled></textarea>
-
-    <label>Reason / Comment</label>
-    <textarea id="responseReason" rows="4" placeholder="Enter why you are not satisfied with the QA resolution"></textarea>
-
+    <label>Agent</label><input type="text" id="responseAgent" disabled>
+    <label>SL No</label><input type="text" id="responseSlNo" disabled>
+    <label>QA Resolution</label><textarea id="responseResolution" rows="3" disabled></textarea>
+    <label>Reason / Comment</label><textarea id="responseReason" rows="4" placeholder="Enter why you are not satisfied with the QA resolution"></textarea>
     <button onclick="closeResolutionResponsePopup()">Cancel</button>
     <button id="submitResponseBtn" class="danger" onclick="submitNotSatisfiedResponse()">Submit & Notify QA</button>
     <p id="responseSubmitStatus" class="loading"></p>
@@ -1685,6 +1372,54 @@ async function submitNotSatisfiedResponse() {
     setLoading("responseSubmitStatus", "");
   }
 }
+
+
+function setActiveNav(name) {
+  ["navAgent","navAll","navCharts","navDisputes","navActivity"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("active");
+  });
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : "";
+  if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
+}
+
+function showDashboardView(name) {
+  const coming = document.getElementById("comingSoonBox");
+  if (coming) coming.style.display = "none";
+
+  const agent = document.getElementById("viewAgent");
+  const all = document.getElementById("viewAll");
+  const disputes = document.getElementById("viewDisputes");
+
+  if (agent) agent.style.display = name === "agent" ? "block" : "none";
+  if (all) all.style.display = name === "all" ? "block" : "none";
+  if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
+
+  setActiveNav(name);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showComingSoon(title) {
+  showDashboardView("none");
+  ["navAgent","navAll","navCharts","navDisputes","navActivity"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("active");
+  });
+  if (title === "Report and Charts" && document.getElementById("navCharts")) document.getElementById("navCharts").classList.add("active");
+  if (title === "Activity Logs" && document.getElementById("navActivity")) document.getElementById("navActivity").classList.add("active");
+  const box = document.getElementById("comingSoonBox");
+  const heading = document.getElementById("comingSoonTitle");
+  if (heading) heading.textContent = title + " - Coming Soon";
+  if (box) box.style.display = "block";
+}
+
+async function openDisputeDetailsView() {
+  showDashboardView("disputes");
+  if (CURRENT_USER) {
+    try { await loadDisputes(); } catch(e) { console.log(e); }
+  }
+}
+
 </script>
 
 <div class="fixed-badge">Volt QA System</div>
