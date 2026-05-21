@@ -68,20 +68,11 @@ body {
 }
 .nav-item:hover { background:#f1f5ff; transform:none; box-shadow:none; }
 .nav-item.active { background:linear-gradient(135deg,#1d5cff,#0f64ff); color:white; box-shadow:0 10px 22px rgba(29,92,255,.22); }
-.nav-left { display:flex; align-items:center; gap:11px; }
+.nav-left { display:flex; align-items:center; gap:11px; flex:1; min-width:0; text-align:left; line-height:1.25; }
+.nav-left .nav-label { display:block; text-align:left; white-space:normal; }
 .nav-icon { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; }
 .nav-arrow { opacity:.8; font-size:20px; line-height:1; }
-.sidebar-card {
-  margin-top:auto;
-  background:#0f172a;
-  color:white;
-  border-radius:18px;
-  padding:18px 14px;
-  box-shadow:0 16px 35px rgba(15,23,42,.20);
-}
-.sidebar-card h4 { margin:0 0 6px; font-size:14px; }
-.sidebar-card p { margin:0 0 12px; font-size:12px; color:#cbd5e1; line-height:1.45; }
-.sidebar-card button { width:100%; background:white; color:#0f172a; box-shadow:none; border-radius:12px; padding:11px 12px; margin:0; }
+.sidebar-card { display:none; }
 .main { flex:1; min-width:0; }
 .top-header {
   background:white;
@@ -97,7 +88,9 @@ body {
 }
 .page-title { margin:0; font-size:25px; font-weight:800; letter-spacing:-.03em; color:#111827; }
 .page-subtitle { margin-top:4px; color:#64748b; font-size:13px; }
-.header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.header-actions { display:none; }
+.login-main-btn { background:linear-gradient(135deg,#1d5cff,#0f64ff)!important; color:white!important; border-color:#1d5cff!important; box-shadow:0 12px 28px rgba(29,92,255,.28)!important; padding:10px 16px!important; border-radius:999px!important; margin-left:6px!important; }
+.login-main-btn:hover { transform:translateY(-1px); box-shadow:0 16px 30px rgba(29,92,255,.34)!important; }
 .btn-light, .btn-primary, .btn-dark {
   border:1px solid #e5e7eb;
   border-radius:12px;
@@ -226,43 +219,36 @@ a:hover { text-decoration:underline; }
 
     <nav class="nav-menu">
       <button class="nav-item active" id="navAgent" onclick="showDashboardView('agent')">
-        <span class="nav-left"><span class="nav-icon">▥</span> Agent Report Filters</span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">▥</span><span class="nav-label">Agent Wise Report</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navAll" onclick="showDashboardView('all')">
-        <span class="nav-left"><span class="nav-icon">👥</span> All Agent Summary / Bulk Email</span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">👥</span><span class="nav-label">All Agent Summary / Bulk Email</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navDisputes" onclick="openDisputeDetailsView()">
-        <span class="nav-left"><span class="nav-icon">✉</span> Dispute Details</span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">✉</span><span class="nav-label">Dispute Details</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navCharts" onclick="showComingSoon('Report and Charts')">
-        <span class="nav-left"><span class="nav-icon">▣</span> Report and Charts</span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">▣</span><span class="nav-label">Report and Charts</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navActivity" onclick="showComingSoon('Activity Logs')">
-        <span class="nav-left"><span class="nav-icon">☰</span> Activity Logs</span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">☰</span><span class="nav-label">Activity Logs</span></span><span class="nav-arrow">›</span>
       </button>
     </nav>
 
-    <div class="sidebar-card">
-      <h4>Weekly auto summary</h4>
-      <p>Admin can trigger bulk reports after date selection.</p>
-      <button onclick="showDashboardView('all')">➤ Trigger Now</button>
-    </div>
   </aside>
 
   <main class="main">
     <header class="top-header">
       <div>
         <h1 class="page-title">QA Performance Dashboard</h1>
-        <div class="page-subtitle">Clean view for Admin, TL and QA login access</div>
         <div class="user-strip">
           <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
           <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
           <span id="mainStatus" class="loading"></span>
+          <button id="loginBtn" class="login-main-btn" onclick="login()">Login with Google</button>
         </div>
       </div>
-      <div class="header-actions">
-        <button id="loginBtn" class="btn-light" onclick="login()">Login with Google</button>
-      </div>
+      <div class="header-actions"></div>
     </header>
 
     <section class="content">
@@ -278,7 +264,7 @@ a:hover { text-decoration:underline; }
 
       <div id="viewAgent">
         <div class="card" id="filters">
-          <h2>Agent Report Filters</h2>
+          <h2>Agent Wise Report</h2>
           <label>Agent</label>
           <select id="agentSelect"></select>
           <div class="grid-2">
