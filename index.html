@@ -176,6 +176,11 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 .quick-value { margin-top:8px; font-size:27px; font-weight:900; }
 .quick-sub { margin-top:6px; font-size:12px; color:#64748b; }
 .coming-box { display:none; background:white; border:1px dashed #cbd5e1; border-radius:20px; padding:34px; text-align:center; color:#475569; box-shadow:0 10px 24px rgba(15,23,42,.05); }
+.restricted-box { display:none; background:#fff7ed; border:1px solid #fed7aa; border-left:5px solid #f97316; border-radius:20px; padding:26px; color:#9a3412; box-shadow:0 10px 24px rgba(15,23,42,.05); margin-bottom:20px; }
+.restricted-box h2 { color:#9a3412; margin-bottom:8px; }
+.dispute-filter-card { display:none; background:white; border:1px solid #e6eaf0; border-radius:20px; padding:20px; margin-bottom:20px; box-shadow:0 10px 24px rgba(15,23,42,.06); }
+.dispute-filter-row { display:grid; grid-template-columns: minmax(220px, 360px) auto; gap:14px; align-items:end; }
+@media(max-width: 700px){ .dispute-filter-row{grid-template-columns:1fr;} }
 .coming-box h2 { margin-bottom:8px; }
 table { width:100%; border-collapse:separate; border-spacing:0; margin-top:18px; background:white; border:1px solid #e6eaf0; border-radius:16px; overflow:hidden; box-shadow:0 9px 20px rgba(15,23,42,.04); }
 th { background:#f8fafc; color:#334155; font-size:12px; font-weight:900; padding:14px; text-align:left; border-bottom:1px solid #e6eaf0; }
@@ -226,11 +231,11 @@ a:hover { text-decoration:underline; }
       <button class="nav-item" id="navAll" onclick="showDashboardView('all')">
         <span class="nav-left"><span class="nav-icon">👥</span> All Agent Summary / Bulk Email</span><span class="nav-arrow">›</span>
       </button>
-      <button class="nav-item" id="navCharts" onclick="showComingSoon('Report and Charts')">
-        <span class="nav-left"><span class="nav-icon">▣</span> Report and Charts</span><span class="nav-arrow">›</span>
-      </button>
       <button class="nav-item" id="navDisputes" onclick="openDisputeDetailsView()">
         <span class="nav-left"><span class="nav-icon">✉</span> Dispute Details</span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navCharts" onclick="showComingSoon('Report and Charts')">
+        <span class="nav-left"><span class="nav-icon">▣</span> Report and Charts</span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navActivity" onclick="showComingSoon('Activity Logs')">
         <span class="nav-left"><span class="nav-icon">☰</span> Activity Logs</span><span class="nav-arrow">›</span>
@@ -257,9 +262,6 @@ a:hover { text-decoration:underline; }
       </div>
       <div class="header-actions">
         <button id="loginBtn" class="btn-light" onclick="login()">Login with Google</button>
-        <button class="btn-light" onclick="exportExcelComingSoon()">⇩ Export Excel</button>
-        <button class="btn-light" onclick="alert('Save PDF option is coming soon.')">▣ Save PDF</button>
-        <button class="btn-primary" onclick="sendReportEmail()">✉ Send Report</button>
       </div>
     </header>
 
@@ -267,6 +269,11 @@ a:hover { text-decoration:underline; }
       <div id="comingSoonBox" class="coming-box">
         <h2 id="comingSoonTitle">Coming Soon</h2>
         <p>This option will be added in the next phase.</p>
+      </div>
+
+      <div id="restrictedBox" class="restricted-box">
+        <h2>Restricted Access</h2>
+        <p>This section is available only for Admin, TL, QA, and Manager login access.</p>
       </div>
 
       <div id="viewAgent">
@@ -302,6 +309,16 @@ a:hover { text-decoration:underline; }
       </div>
 
       <div id="viewDisputes" style="display:none;">
+        <div class="dispute-filter-card" id="disputeFilterCard">
+          <h2>Dispute Details</h2>
+          <div class="dispute-filter-row">
+            <div>
+              <label>Select Agent</label>
+              <select id="disputeAgentSelect" onchange="loadDisputes()"></select>
+            </div>
+            <button onclick="loadDisputes()">View Disputes</button>
+          </div>
+        </div>
         <div class="card" id="disputes" style="display:none;"></div>
       </div>
     </section>
@@ -354,6 +371,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20-majQxyCLQaSjvkZ
 let CURRENT_USER = null;
 let CURRENT_ROLE = null;
 let CURRENT_REPORT = null;
+let ALL_AGENTS = [];
 let DISPUTES_CACHE = [];
 let CURRENT_RESOLUTION_RESPONSE = null;
 
@@ -467,10 +485,12 @@ async function validateUser(email) {
     : '<span class="role-pill role-agent">AGENT</span>';
   document.getElementById("filters").style.display = "block";
 
+  ALL_AGENTS = data.agents || [];
+
   const select = document.getElementById("agentSelect");
   select.innerHTML = "";
 
-  data.agents.forEach(agent => {
+  ALL_AGENTS.forEach(agent => {
     const option = document.createElement("option");
     option.value = agent;
     option.textContent = agent;
@@ -478,6 +498,7 @@ async function validateUser(email) {
   });
 
   select.disabled = !isAdminLikeRole(data.role);
+  populateDisputeAgentDropdown();
 
   if (isAdminLikeRole(data.role)) {
     document.getElementById("adminFilters").style.display = "block";
@@ -1181,8 +1202,16 @@ async function submitDispute() {
 }
 
 async function loadDisputes() {
-  const agent = document.getElementById("agentSelect").value;
+  const disputeSelect = document.getElementById("disputeAgentSelect");
+  let agent = "";
 
+  if (isAdminLikeRole(CURRENT_ROLE)) {
+    agent = disputeSelect ? disputeSelect.value : "";
+  } else {
+    agent = document.getElementById("agentSelect").value;
+  }
+
+  const displayName = agent || "All Agents";
   const div = document.getElementById("disputes");
   div.style.display = "block";
   div.innerHTML = "<h2>Dispute Status</h2><p class='loading'>Fetching dispute status...</p>";
@@ -1202,12 +1231,12 @@ async function loadDisputes() {
   DISPUTES_CACHE = disputes;
 
   if (!disputes.length) {
-    div.innerHTML = `<h2>Dispute Status - ${agent}</h2><p>No disputes raised by this agent.</p>`;
+    div.innerHTML = `<h2>Dispute Status - ${displayName}</h2><p>No disputes raised.</p>`;
     return;
   }
 
   let html = `
-    <h2>Dispute Status - ${agent}</h2>
+    <h2>Dispute Status - ${displayName}</h2>
     <p><b>Buttons will be shown only after QA reply / resolution is updated.</b></p>
     <table>
       <thead>
@@ -1383,23 +1412,59 @@ function setActiveNav(name) {
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
+function populateDisputeAgentDropdown() {
+  const disputeSelect = document.getElementById("disputeAgentSelect");
+  const filterCard = document.getElementById("disputeFilterCard");
+  if (!disputeSelect || !filterCard) return;
+
+  if (isAdminLikeRole(CURRENT_ROLE)) {
+    filterCard.style.display = "block";
+    disputeSelect.innerHTML = `<option value="">All Agents</option>`;
+    ALL_AGENTS.forEach(agent => {
+      const option = document.createElement("option");
+      option.value = agent;
+      option.textContent = agent;
+      disputeSelect.appendChild(option);
+    });
+  } else {
+    filterCard.style.display = "none";
+  }
+}
+
 function showDashboardView(name) {
   const coming = document.getElementById("comingSoonBox");
+  const restricted = document.getElementById("restrictedBox");
   if (coming) coming.style.display = "none";
+  if (restricted) restricted.style.display = "none";
 
   const agent = document.getElementById("viewAgent");
   const all = document.getElementById("viewAll");
   const disputes = document.getElementById("viewDisputes");
 
+  if (agent) agent.style.display = "none";
+  if (all) all.style.display = "none";
+  if (disputes) disputes.style.display = "none";
+
+  if (name === "all" && !isAdminLikeRole(CURRENT_ROLE)) {
+    if (restricted) restricted.style.display = "block";
+    setActiveNav("all");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
   if (agent) agent.style.display = name === "agent" ? "block" : "none";
   if (all) all.style.display = name === "all" ? "block" : "none";
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
+
+  if (name === "disputes") populateDisputeAgentDropdown();
 
   setActiveNav(name);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showComingSoon(title) {
+  const restricted = document.getElementById("restrictedBox");
+  if (restricted) restricted.style.display = "none";
   showDashboardView("none");
   ["navAgent","navAll","navCharts","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
