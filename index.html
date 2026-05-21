@@ -516,6 +516,36 @@ async function apiCall(payload) {
   }
 }
 
+
+function getBrowserName() {
+  const ua = navigator.userAgent || "";
+  if (ua.includes("Edg/")) return "Microsoft Edge";
+  if (ua.includes("Chrome/")) return "Chrome";
+  if (ua.includes("Safari/") && !ua.includes("Chrome/")) return "Safari";
+  if (ua.includes("Firefox/")) return "Firefox";
+  return "Unknown Browser";
+}
+
+function getDeviceType() {
+  const ua = navigator.userAgent || "";
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return "Mobile / Tablet";
+  return "Desktop";
+}
+
+function trackActivity(activity, agent, details) {
+  if (!CURRENT_USER) return;
+
+  apiCall({
+    action: "logActivity",
+    email: CURRENT_USER,
+    activity: activity || "",
+    agent: agent || "",
+    details: details || "",
+    browser: getBrowserName(),
+    device: getDeviceType()
+  }).catch(err => console.log("Activity log failed", err));
+}
+
 async function login() {
   const provider = new firebase.auth.GoogleAuthProvider();
   const btn = document.getElementById("loginBtn");
@@ -571,6 +601,8 @@ async function validateUser(email) {
   if (isAdminLikeRole(data.role)) {
     document.getElementById("adminFilters").style.display = "block";
   }
+
+  trackActivity("Login", data.agent || "", "User logged in successfully");
 }
 
 async function loadReport() {
@@ -609,6 +641,7 @@ async function loadReport() {
     await loadDisputes();
 
     setLoading("reportStatus", "Agent report loaded successfully.");
+    trackActivity("Generate Agent Report", data.agent || agent, "Period: " + data.period + " | Total audits: " + data.totalAudits);
   } catch (err) {
     alert(err.message);
   } finally {
@@ -648,6 +681,7 @@ async function sendReportEmail() {
   }
 
   setLoading("reportStatus", "Email sent successfully.");
+  trackActivity("Send Individual Report Email", CURRENT_REPORT.agent, "Sent to: " + agentEmail + " | Period: " + CURRENT_REPORT.period);
 }
 
 async function bulkSendReports() {
@@ -685,6 +719,7 @@ async function bulkSendReports() {
 
   alert(msg);
   setLoading("allAgentStatus", msg);
+  trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
 }
 
 function sanitizeEmailText(text) {
@@ -840,7 +875,7 @@ function buildCleanSummaryForEmail(data) {
 
   summary = summary
     .replace(/[^\x00-\x7F]/g, "")
-    .replace(/ðŸ“Œ|âœ…|âš ï¸|âŒ|ðŸ“Š|ðŸ“|ðŸ”´|ðŸŸ¢/g, "");
+    .replace(/📌|✅|⚠️|❌|📊|📍|🔴|🟢/g, "");
 
   return `
     <div style="margin-top:20px;background:#f8fafc;border-left:4px solid #1976d2;padding:12px;">
@@ -1086,7 +1121,7 @@ function cleanPoint(text) {
   return text
     .replace(/\n/g, " ")
     .replace(/\s+/g, " ")
-    .replace(/^[-â€“â€¢:,\s]+/, "")
+    .replace(/^[-–•:,\s]+/, "")
     .replace(/na$/i, "")
     .replace(/^and\s+/i, "")
     .trim();
@@ -1166,7 +1201,7 @@ function extractPoints(sectionText) {
   if (!sectionText) return [];
 
   return sectionText
-    .split(/[-â€¢\n]+/)
+    .split(/[-•\n]+/)
     .map(p => cleanPoint(p))
     .filter(p => p && p.length > 8 && p.toLowerCase() !== "na")
     .filter(p => !isBadSummaryHeader(p));
@@ -1245,6 +1280,7 @@ async function submitDispute() {
     }
 
     alert("Dispute submitted successfully");
+    trackActivity("Dispute Raised", agent, "SL No: " + slNo + " | Period: " + from + " to " + to);
 
     document.getElementById("disputeSlNo").value = "";
     document.getElementById("disputeDesc").value = "";
@@ -1381,6 +1417,7 @@ async function submitHappyResponse(index) {
   }
 
   alert(data.message || "Response captured successfully.");
+  trackActivity("Happy with Resolution", dispute.agent, "SL No: " + dispute.slNo);
   await loadDisputes();
 }
 
@@ -1441,6 +1478,7 @@ async function submitNotSatisfiedResponse() {
     }
 
     alert(data.message || "Response captured and email sent successfully.");
+    trackActivity("Not Satisfied with Resolution", CURRENT_RESOLUTION_RESPONSE.agent, "SL No: " + CURRENT_RESOLUTION_RESPONSE.slNo + " | Reason: " + reason);
     closeResolutionResponsePopup();
     await loadDisputes();
   } catch (err) {
