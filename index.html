@@ -722,9 +722,19 @@ async function bulkSendReports() {
   trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
 }
 
-function sanitizeEmailText(text) {
+
+function removeMobileNumbers(text) {
   if (!text) return "";
   return String(text)
+    .replace(/(?:\+?91[-\s]?)?[6-9]\d{9}\b/g, "")
+    .replace(/\b\d{10}\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function sanitizeEmailText(text) {
+  if (!text) return "";
+  return removeMobileNumbers(String(text))
     .replace(/[^\x00-\x7F]/g, "")
     .replace(/\n/g, "<br>")
     .replace(/\s{2,}/g, " ")
@@ -836,7 +846,7 @@ function buildEmailHtml(data) {
         ${emailCompareRow("Call Date", c1.callDate, c2.callDate)}
         ${emailCompareRow("Audit Date", c1.auditDate, c2.auditDate)}
         ${emailCompareRow("Audit Week", c1.auditWeek, c2.auditWeek)}
-        ${emailCompareRow("Critical Issue", c1.criticalIssue, c2.criticalIssue)}
+        ${emailCompareRow("Critical Issue", c1.criticalIssue || "NA", c2.criticalIssue || "NA")}
       </table>
 
       ${buildCleanSummaryForEmail(data)}
@@ -1118,7 +1128,7 @@ function buildCategorySummary(grouped) {
 function cleanPoint(text) {
   if (!text) return "";
 
-  return text
+  return removeMobileNumbers(text)
     .replace(/\n/g, " ")
     .replace(/\s+/g, " ")
     .replace(/^[-–•:,\s]+/, "")
