@@ -314,9 +314,9 @@ a:hover { text-decoration:underline; }
           <div class="dispute-filter-row">
             <div>
               <label>Select Agent</label>
-              <select id="disputeAgentSelect" onchange="loadDisputes()"></select>
+              <select id="disputeAgentSelect"></select>
             </div>
-            <button onclick="loadDisputes()">View Disputes</button>
+            <button id="viewDisputesBtn" onclick="loadDisputes()">View Disputes</button>
           </div>
         </div>
         <div class="card" id="disputes" style="display:none;"></div>
@@ -370,6 +370,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20-majQxyCLQaSjvkZ
 
 let CURRENT_USER = null;
 let CURRENT_ROLE = null;
+let CURRENT_AGENT = null;
 let CURRENT_REPORT = null;
 let ALL_AGENTS = [];
 let DISPUTES_CACHE = [];
@@ -479,6 +480,7 @@ async function validateUser(email) {
   }
 
   CURRENT_ROLE = data.role;
+  CURRENT_AGENT = data.agent || "";
 
   document.getElementById("role").innerHTML = isAdminLikeRole(data.role)
     ? `<span class="role-pill role-admin">${String(data.role).toUpperCase()}</span>`
@@ -540,7 +542,6 @@ async function loadReport() {
 
     renderSummary(data);
     renderCalls(data.calls);
-    await loadDisputes();
 
     setLoading("reportStatus", "Agent report loaded successfully.");
     trackActivity("Generate Agent Report", data.agent || agent, "Period: " + data.period + " | Total audits: " + data.totalAudits);
@@ -1191,7 +1192,10 @@ async function submitDispute() {
     document.getElementById("disputeDesc").value = "";
 
     closeDispute();
-    await loadDisputes();
+    const disputesView = document.getElementById("viewDisputes");
+    if (disputesView && disputesView.style.display !== "none") {
+      await loadDisputes();
+    }
 
   } catch (err) {
     alert(err.message);
@@ -1203,135 +1207,134 @@ async function submitDispute() {
 
 async function loadDisputes() {
   const disputeSelect = document.getElementById("disputeAgentSelect");
+  const viewBtn = document.getElementById("viewDisputesBtn");
   let agent = "";
 
   if (isAdminLikeRole(CURRENT_ROLE)) {
     agent = disputeSelect ? disputeSelect.value : "";
   } else {
-    agent = document.getElementById("agentSelect").value;
+    agent = CURRENT_AGENT || document.getElementById("agentSelect").value;
   }
 
   const displayName = agent || "All Agents";
   const div = document.getElementById("disputes");
-  div.style.display = "block";
-  div.innerHTML = "<h2>Dispute Status</h2><p class='loading'>Fetching dispute status...</p>";
 
-  const data = await apiCall({
-    action:"getDisputes",
-    email:CURRENT_USER,
-    agent:agent
-  });
-
-  if (!data.ok) {
-    div.innerHTML = `<h2>Dispute Status</h2><p>${data.error}</p>`;
-    return;
-  }
-
-  const disputes = data.disputes || [];
-  DISPUTES_CACHE = disputes;
-
-  if (!disputes.length) {
-    div.innerHTML = `<h2>Dispute Status - ${displayName}</h2><p>No disputes raised.</p>`;
-    return;
-  }
-
-  let html = `
-    <h2>Dispute Status - ${displayName}</h2>
-    <p><b>Buttons will be shown only after QA reply / resolution is updated.</b></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Raised Time</th>
-          <th>Agent</th>
-          <th>SL No</th>
-          <th>Report From Date</th>
-          <th>Report To Date</th>
-          <th>Description</th>
-          <th>Status</th>
-          <th>QA Reply / Resolution</th>
-          <th>Agent Response</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  disputes.forEach((d, index) => {
-    const resolved = (d.resolution || "").trim();
-    const responseStatus = (d.responseStatus || "").trim();
-    const responseLower = responseStatus.toLowerCase();
-    const hasResponse = !!responseStatus;
-
-    let rowClass = "pending";
-    if (responseLower === "happy with resolution") rowClass = "good";
-    else if (responseLower === "not satisfied with resolution") rowClass = "bad";
-    else if (resolved) rowClass = "good";
-
-    let responseText = "Waiting for QA resolution";
-    if (resolved && !hasResponse) {
-      responseText = "Agent response pending";
-    }
-    if (hasResponse) {
-      responseText = `
-        <b>${responseStatus}</b><br>
-        <small><b>Comment:</b> ${d.responseReason || "-"}</small><br>
-        <small><b>Time:</b> ${d.responseTime || "-"}</small><br>
-        <small><b>Notified:</b> ${d.notificationStatus || "-"}</small>
-      `;
+  try {
+    if (viewBtn) {
+      viewBtn.disabled = true;
+      viewBtn.textContent = "Loading disputes...";
     }
 
-    let action = "-";
-    if (resolved && !hasResponse) {
-      action = `
-        <button class="green-btn" style="padding:8px 12px;font-size:12px;" onclick="submitHappyResponse(${index})">Happy with Resolution</button>
-        <button class="danger" style="padding:8px 12px;font-size:12px;" onclick="openResolutionResponsePopup(${index})">Not Satisfied with Resolution</button>
-      `;
-    }
-
-    html += `
-      <tr class="${rowClass}">
-        <td>${d.timestamp || ""}</td>
-        <td>${d.agent || ""}</td>
-        <td>${d.slNo || ""}</td>
-        <td>${d.from || ""}</td>
-        <td>${d.to || ""}</td>
-        <td>${d.description || ""}</td>
-        <td>${hasResponse ? responseStatus : (resolved ? "QA Resolution Shared" : "Pending QA Reply")}</td>
-        <td>${resolved || "QA reply pending"}</td>
-        <td>${responseText}</td>
-        <td>${action}</td>
-      </tr>
+    div.style.display = "block";
+    div.innerHTML = `
+      <h2>Dispute Status - ${displayName}</h2>
+      <p class='loading'>Fetching dispute status, please wait...</p>
     `;
-  });
 
-  html += `</tbody></table>`;
-  div.innerHTML = html;
-}
+    const data = await apiCall({
+      action:"getDisputes",
+      email:CURRENT_USER,
+      agent:agent
+    });
 
-async function submitHappyResponse(index) {
-  const dispute = DISPUTES_CACHE[index];
-  if (!dispute) return;
+    if (!data.ok) {
+      div.innerHTML = `<h2>Dispute Status</h2><p>${data.error}</p>`;
+      return;
+    }
 
-  const confirmAccept = confirm("Confirm that you are happy with the QA resolution?");
-  if (!confirmAccept) return;
+    const disputes = data.disputes || [];
+    DISPUTES_CACHE = disputes;
 
-  const data = await apiCall({
-    action:"respondDisputeResolution",
-    email:CURRENT_USER,
-    agent:dispute.agent,
-    slNo:dispute.slNo,
-    responseStatus:"Happy with Resolution",
-    reason:""
-  });
+    if (!disputes.length) {
+      div.innerHTML = `<h2>Dispute Status - ${displayName}</h2><p>No disputes raised.</p>`;
+      return;
+    }
 
-  if (!data.ok) {
-    alert(data.error);
-    return;
+    let html = `
+      <h2>Dispute Status - ${displayName}</h2>
+      <p><b>Agent response buttons are visible only to the concerned agent after QA reply / resolution is updated.</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Raised Time</th>
+            <th>Agent</th>
+            <th>SL No</th>
+            <th>Report From Date</th>
+            <th>Report To Date</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>QA Reply / Resolution</th>
+            <th>Agent Response</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    disputes.forEach((d, index) => {
+      const resolved = (d.resolution || "").trim();
+      const responseStatus = (d.responseStatus || "").trim();
+      const responseLower = responseStatus.toLowerCase();
+      const hasResponse = !!responseStatus;
+
+      let rowClass = "pending";
+      if (responseLower === "happy with resolution") rowClass = "good";
+      else if (responseLower === "not satisfied with resolution") rowClass = "bad";
+      else if (resolved) rowClass = "good";
+
+      let responseText = "Waiting for QA resolution";
+      if (resolved && !hasResponse) {
+        responseText = "Agent response pending";
+      }
+      if (hasResponse) {
+        responseText = `
+          <b>${responseStatus}</b><br>
+          <small><b>Comment:</b> ${d.responseReason || "-"}</small><br>
+          <small><b>Time:</b> ${d.responseTime || "-"}</small><br>
+          <small><b>Notified:</b> ${d.notificationStatus || "-"}</small>
+        `;
+      }
+
+      const canRespond =
+        !isAdminLikeRole(CURRENT_ROLE) &&
+        String(d.agent || "").toLowerCase().trim() === String(CURRENT_AGENT || "").toLowerCase().trim();
+
+      let action = "-";
+      if (resolved && !hasResponse && canRespond) {
+        action = `
+          <button class="green-btn" style="padding:8px 12px;font-size:12px;" onclick="submitHappyResponse(${index})">Happy with Resolution</button>
+          <button class="danger" style="padding:8px 12px;font-size:12px;" onclick="openResolutionResponsePopup(${index})">Not Satisfied with Resolution</button>
+        `;
+      } else if (resolved && !hasResponse && !canRespond) {
+        action = `<span style="color:#64748b;font-weight:700;">Only concerned agent can respond</span>`;
+      }
+
+      html += `
+        <tr class="${rowClass}">
+          <td>${d.timestamp || ""}</td>
+          <td>${d.agent || ""}</td>
+          <td>${d.slNo || ""}</td>
+          <td>${d.from || ""}</td>
+          <td>${d.to || ""}</td>
+          <td>${d.description || ""}</td>
+          <td>${hasResponse ? responseStatus : (resolved ? "QA Resolution Shared" : "Pending QA Reply")}</td>
+          <td>${resolved || "QA reply pending"}</td>
+          <td>${responseText}</td>
+          <td>${action}</td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    div.innerHTML = html;
+  } catch (err) {
+    div.innerHTML = `<h2>Dispute Status</h2><p>${err.message}</p>`;
+  } finally {
+    if (viewBtn) {
+      viewBtn.disabled = false;
+      viewBtn.textContent = "View Disputes";
+    }
   }
-
-  alert(data.message || "Response captured successfully.");
-  trackActivity("Happy with Resolution", dispute.agent, "SL No: " + dispute.slNo);
-  await loadDisputes();
 }
 
 function openResolutionResponsePopup(index) {
@@ -1417,8 +1420,11 @@ function populateDisputeAgentDropdown() {
   const filterCard = document.getElementById("disputeFilterCard");
   if (!disputeSelect || !filterCard) return;
 
+  filterCard.style.display = "block";
+  disputeSelect.innerHTML = "";
+
   if (isAdminLikeRole(CURRENT_ROLE)) {
-    filterCard.style.display = "block";
+    disputeSelect.disabled = false;
     disputeSelect.innerHTML = `<option value="">All Agents</option>`;
     ALL_AGENTS.forEach(agent => {
       const option = document.createElement("option");
@@ -1427,7 +1433,11 @@ function populateDisputeAgentDropdown() {
       disputeSelect.appendChild(option);
     });
   } else {
-    filterCard.style.display = "none";
+    disputeSelect.disabled = true;
+    const option = document.createElement("option");
+    option.value = CURRENT_AGENT || document.getElementById("agentSelect").value || "";
+    option.textContent = option.value || "My Disputes";
+    disputeSelect.appendChild(option);
   }
 }
 
@@ -1456,7 +1466,14 @@ function showDashboardView(name) {
   if (all) all.style.display = name === "all" ? "block" : "none";
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
 
-  if (name === "disputes") populateDisputeAgentDropdown();
+  if (name === "disputes") {
+    populateDisputeAgentDropdown();
+    const div = document.getElementById("disputes");
+    if (div) {
+      div.style.display = "none";
+      div.innerHTML = "";
+    }
+  }
 
   setActiveNav(name);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1480,9 +1497,6 @@ function showComingSoon(title) {
 
 async function openDisputeDetailsView() {
   showDashboardView("disputes");
-  if (CURRENT_USER) {
-    try { await loadDisputes(); } catch(e) { console.log(e); }
-  }
 }
 
 </script>
