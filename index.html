@@ -454,25 +454,23 @@
   <p id="allAgentStatus" class="loading"></p>
 </div>
 
-<div id="adminDashboardPanel" class="admin-dashboard-panel">
-  <div class="admin-kpi-grid">
-    <div class="kpi-card">
-      <div><div class="kpi-label">Reports Sent Today</div><div class="kpi-value" id="kpiReportsSent">0</div></div>
-      <div class="kpi-icon">✉</div>
-    </div>
-    <div class="kpi-card">
-      <div><div class="kpi-label">Active Users Today</div><div class="kpi-value" id="kpiActiveUsers">0</div></div>
-      <div class="kpi-icon">👥</div>
-    </div>
-  </div>
-</div>
-
 <div id="activityPopup">
   <div class="activity-modal-card">
     <div class="activity-modal-head">
       <h2 class="live-activity-title" style="margin:0;"><span style="color:#2563eb;">⌁</span> Today Activity Logs</h2>
       <button class="activity-close-btn" onclick="closeActivityPanel()">Close</button>
     </div>
+    <div class="admin-kpi-grid activity-kpi-grid">
+      <div class="kpi-card">
+        <div><div class="kpi-label">Reports Sent Today</div><div class="kpi-value" id="kpiReportsSent">0</div></div>
+        <div class="kpi-icon">✉</div>
+      </div>
+      <div class="kpi-card">
+        <div><div class="kpi-label">Active Users Today</div><div class="kpi-value" id="kpiActiveUsers">0</div></div>
+        <div class="kpi-icon">👥</div>
+      </div>
+    </div>
+
     <div id="liveActivityList">
       <div class="activity-row"><span class="activity-dot"></span><span class="activity-text">No activity logged today yet.</span></div>
     </div>
