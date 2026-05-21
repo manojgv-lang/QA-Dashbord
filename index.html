@@ -406,7 +406,6 @@
   <div class="user-info">
     <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
     <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
-    <button id="activityTabBtn" class="activity-tab-btn" onclick="openActivityPanel()">⌁ Activity</button>
   </div>
 
   <p id="mainStatus" class="loading"></p>
@@ -452,29 +451,6 @@
   <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
   <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
   <p id="allAgentStatus" class="loading"></p>
-</div>
-
-<div id="activityPopup">
-  <div class="activity-modal-card">
-    <div class="activity-modal-head">
-      <h2 class="live-activity-title" style="margin:0;"><span style="color:#2563eb;">⌁</span> Today Activity Logs</h2>
-      <button class="activity-close-btn" onclick="closeActivityPanel()">Close</button>
-    </div>
-    <div class="admin-kpi-grid activity-kpi-grid">
-      <div class="kpi-card">
-        <div><div class="kpi-label">Reports Sent Today</div><div class="kpi-value" id="kpiReportsSent">0</div></div>
-        <div class="kpi-icon">✉</div>
-      </div>
-      <div class="kpi-card">
-        <div><div class="kpi-label">Active Users Today</div><div class="kpi-value" id="kpiActiveUsers">0</div></div>
-        <div class="kpi-icon">👥</div>
-      </div>
-    </div>
-
-    <div id="liveActivityList">
-      <div class="activity-row"><span class="activity-dot"></span><span class="activity-text">No activity logged today yet.</span></div>
-    </div>
-  </div>
 </div>
 
 <div class="card" id="summary" style="display:none;"></div>
@@ -539,7 +515,6 @@ let CURRENT_ROLE = null;
 let CURRENT_REPORT = null;
 let DISPUTES_CACHE = [];
 let CURRENT_RESOLUTION_RESPONSE = null;
-let ACTIVITY_REFRESH_TIMER = null;
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -580,74 +555,6 @@ function escapeHtml(value) {
 
 function exportExcelComingSoon() {
   alert("Export Excel option is coming soon. It will export raw data as-is without changing Raw Audits format.");
-}
-
-function openActivityPanel() {
-  const popup = document.getElementById("activityPopup");
-  if (popup) popup.style.display = "flex";
-  loadTodayActivity();
-}
-
-function closeActivityPanel() {
-  const popup = document.getElementById("activityPopup");
-  if (popup) popup.style.display = "none";
-}
-
-function setAdminKpi(totalAudits, averageScore) {
-  // Total Audits and Average Score KPI cards removed as requested.
-}
-
-function activityLabel(row) {
-  const action = row.action || "Activity";
-  const email = row.email || "User";
-  const agent = row.agent || "";
-  const shortEmail = email.split("@")[0] || email;
-
-  if (action === "Login") return shortEmail + " logged in";
-  if (action === "Generate Agent Report") return shortEmail + " opened report" + (agent ? " for " + agent : "");
-  if (action === "Send Individual Report Email") return shortEmail + " sent email" + (agent ? " for " + agent : "");
-  if (action === "Send Bulk Report Email") return shortEmail + " sent bulk report";
-  if (action === "Dispute Raised") return shortEmail + " raised dispute" + (agent ? " for " + agent : "");
-  if (action === "Happy with Resolution") return shortEmail + " accepted dispute resolution";
-  if (action === "Not Satisfied with Resolution") return shortEmail + " not satisfied with resolution";
-  return shortEmail + " - " + action;
-}
-
-async function loadTodayActivity() {
-  if (!CURRENT_USER || !isAdminLikeRole(CURRENT_ROLE)) return;
-
-  const data = await apiCall({ action:"getTodayActivity", email:CURRENT_USER });
-  if (!data.ok) return;
-
-  const reportsEl = document.getElementById("kpiReportsSent");
-  const activeEl = document.getElementById("kpiActiveUsers");
-  if (reportsEl) reportsEl.textContent = data.reportsSentToday || 0;
-  if (activeEl) activeEl.textContent = data.activeUsersToday || 0;
-
-  const list = document.getElementById("liveActivityList");
-  if (!list) return;
-
-  const rows = data.activities || [];
-  if (!rows.length) {
-    list.innerHTML = '<div class="activity-row"><span class="activity-dot"></span><span class="activity-text">No activity logged today yet.</span></div>';
-    return;
-  }
-
-  list.innerHTML = rows.slice(0, 10).map(row => `
-    <div class="activity-row">
-      <span class="activity-dot"></span>
-      <span class="activity-text">
-        <b>${escapeHtml(activityLabel(row))}</b>
-        <span class="activity-time">${escapeHtml(row.time || "")}</span>
-      </span>
-    </div>
-  `).join("");
-}
-
-function startActivityRefresh() {
-  if (ACTIVITY_REFRESH_TIMER) clearInterval(ACTIVITY_REFRESH_TIMER);
-  loadTodayActivity();
-  ACTIVITY_REFRESH_TIMER = setInterval(loadTodayActivity, 30000);
 }
 
 function getBrowserName() {
@@ -733,14 +640,9 @@ async function validateUser(email) {
 
   if (isAdminLikeRole(data.role)) {
     document.getElementById("adminFilters").style.display = "block";
-    document.getElementById("adminDashboardPanel").style.display = "block";
-    const activityBtn = document.getElementById("activityTabBtn");
-    if (activityBtn) activityBtn.style.display = "inline-flex";
-    startActivityRefresh();
   }
 
   trackActivity("Login", data.agent || "", "User logged in successfully");
-  setTimeout(loadTodayActivity, 1200);
 }
 
 async function loadReport() {
@@ -775,14 +677,12 @@ async function loadReport() {
     CURRENT_REPORT = data;
 
     renderSummary(data);
-    setAdminKpi(data.totalAudits, data.averageScore);
     renderCalls(data.calls);
     await loadDisputes();
 
     setLoading("reportStatus", "Agent report loaded successfully.");
     trackActivity("Generate Agent Report", data.agent || agent, "Period: " + data.period + " | Total audits: " + data.totalAudits);
-    setTimeout(loadTodayActivity, 1200);
-  } catch (err) {
+    } catch (err) {
     alert(err.message);
   } finally {
     btn.disabled = false;
@@ -822,7 +722,6 @@ async function sendReportEmail() {
 
   setLoading("reportStatus", "Email sent successfully.");
   trackActivity("Send Individual Report Email", CURRENT_REPORT.agent, "Sent to: " + agentEmail + " | Period: " + CURRENT_REPORT.period);
-  setTimeout(loadTodayActivity, 1200);
 }
 
 async function bulkSendReports() {
@@ -861,7 +760,6 @@ async function bulkSendReports() {
   alert(msg);
   setLoading("allAgentStatus", msg);
   trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
-  setTimeout(loadTodayActivity, 1200);
 }
 
 
@@ -1426,8 +1324,7 @@ async function submitDispute() {
 
     alert("Dispute submitted successfully");
     trackActivity("Dispute Raised", agent, "SL No: " + slNo + " | Period: " + from + " to " + to);
-    setTimeout(loadTodayActivity, 1200);
-
+  
     document.getElementById("disputeSlNo").value = "";
     document.getElementById("disputeDesc").value = "";
 
@@ -1564,7 +1461,6 @@ async function submitHappyResponse(index) {
 
   alert(data.message || "Response captured successfully.");
   trackActivity("Happy with Resolution", dispute.agent, "SL No: " + dispute.slNo);
-  setTimeout(loadTodayActivity, 1200);
   await loadDisputes();
 }
 
@@ -1626,8 +1522,7 @@ async function submitNotSatisfiedResponse() {
 
     alert(data.message || "Response captured and email sent successfully.");
     trackActivity("Not Satisfied with Resolution", CURRENT_RESOLUTION_RESPONSE.agent, "SL No: " + CURRENT_RESOLUTION_RESPONSE.slNo + " | Reason: " + reason);
-    setTimeout(loadTodayActivity, 1200);
-    closeResolutionResponsePopup();
+      closeResolutionResponsePopup();
     await loadDisputes();
   } catch (err) {
     alert(err.message);
