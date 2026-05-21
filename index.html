@@ -330,7 +330,8 @@
   .score-bad { color: #dc2626; font-weight: 800; text-align: center; }
 
   #disputePopup,
-  #resolutionResponsePopup {
+  #resolutionResponsePopup,
+  #activityPopup {
     display: none;
     position: fixed;
     inset: 0;
@@ -355,7 +356,7 @@
 
 
   .admin-dashboard-panel { display:none; margin-bottom:22px; }
-  .admin-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+  .admin-kpi-grid { display:grid; grid-template-columns:repeat(2, minmax(220px, 1fr)); gap:14px; margin-bottom:18px; max-width:760px; }
   .kpi-card { background:rgba(255,255,255,0.96); border:1px solid #e2e8f0; border-radius:22px; padding:18px; box-shadow:0 14px 34px rgba(15,23,42,0.08); display:flex; align-items:center; justify-content:space-between; }
   .kpi-label { color:#64748b; font-size:12px; font-weight:700; margin-bottom:8px; }
   .kpi-value { color:#0f172a; font-size:26px; font-weight:900; line-height:1; }
@@ -368,6 +369,10 @@
   .activity-text b { color:#0f172a; }
   .activity-time { display:block; color:#64748b; font-size:12px; margin-top:3px; }
   .coming-soon-btn { background:linear-gradient(135deg,#0f172a,#334155); box-shadow:0 10px 22px rgba(15,23,42,0.18); }
+  .activity-tab-btn { display:none; align-items:center; gap:8px; background:linear-gradient(135deg,#0f172a,#334155); color:white; border-radius:999px; padding:11px 16px; margin-top:0; }
+  .activity-modal-card { background:white; width:640px; max-width:94%; max-height:78vh; overflow:auto; border-radius:26px; padding:26px; box-shadow:0 30px 70px rgba(0,0,0,0.26); }
+  .activity-modal-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
+  .activity-close-btn { background:#f1f5f9; color:#0f172a; box-shadow:none; margin:0; padding:10px 14px; }
   .workspace-card { margin-bottom:0; }
 
 
@@ -378,7 +383,7 @@
     .page-title { font-size: 30px; }
     .logo { width: 64px; height: 64px; }
     .category-detail-box { grid-template-columns: 1fr; }
-    .admin-kpi-grid { grid-template-columns:1fr 1fr; }
+    .admin-kpi-grid { grid-template-columns:1fr; max-width:none; }
     .admin-workspace { grid-template-columns:1fr; }
     table { display: block; overflow-x: auto; }
   }
@@ -401,6 +406,7 @@
   <div class="user-info">
     <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
     <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
+    <button id="activityTabBtn" class="activity-tab-btn" onclick="openActivityPanel()">⌁ Activity</button>
   </div>
 
   <p id="mainStatus" class="loading"></p>
@@ -451,14 +457,6 @@
 <div id="adminDashboardPanel" class="admin-dashboard-panel">
   <div class="admin-kpi-grid">
     <div class="kpi-card">
-      <div><div class="kpi-label">Total Audits</div><div class="kpi-value" id="kpiTotalAudits">-</div></div>
-      <div class="kpi-icon">▥</div>
-    </div>
-    <div class="kpi-card">
-      <div><div class="kpi-label">Average Score</div><div class="kpi-value" id="kpiAverageScore">-</div></div>
-      <div class="kpi-icon">✓</div>
-    </div>
-    <div class="kpi-card">
       <div><div class="kpi-label">Reports Sent Today</div><div class="kpi-value" id="kpiReportsSent">0</div></div>
       <div class="kpi-icon">✉</div>
     </div>
@@ -467,14 +465,16 @@
       <div class="kpi-icon">👥</div>
     </div>
   </div>
+</div>
 
-  <div class="admin-workspace">
-    <div></div>
-    <div class="live-activity-card">
-      <h2 class="live-activity-title"><span style="color:#2563eb;">⌁</span> Live Activity</h2>
-      <div id="liveActivityList">
-        <div class="activity-row"><span class="activity-dot"></span><span class="activity-text">No activity logged today yet.</span></div>
-      </div>
+<div id="activityPopup">
+  <div class="activity-modal-card">
+    <div class="activity-modal-head">
+      <h2 class="live-activity-title" style="margin:0;"><span style="color:#2563eb;">⌁</span> Today Activity Logs</h2>
+      <button class="activity-close-btn" onclick="closeActivityPanel()">Close</button>
+    </div>
+    <div id="liveActivityList">
+      <div class="activity-row"><span class="activity-dot"></span><span class="activity-text">No activity logged today yet.</span></div>
     </div>
   </div>
 </div>
@@ -584,11 +584,19 @@ function exportExcelComingSoon() {
   alert("Export Excel option is coming soon. It will export raw data as-is without changing Raw Audits format.");
 }
 
+function openActivityPanel() {
+  const popup = document.getElementById("activityPopup");
+  if (popup) popup.style.display = "flex";
+  loadTodayActivity();
+}
+
+function closeActivityPanel() {
+  const popup = document.getElementById("activityPopup");
+  if (popup) popup.style.display = "none";
+}
+
 function setAdminKpi(totalAudits, averageScore) {
-  const totalEl = document.getElementById("kpiTotalAudits");
-  const avgEl = document.getElementById("kpiAverageScore");
-  if (totalEl && totalAudits !== undefined && totalAudits !== null) totalEl.textContent = totalAudits;
-  if (avgEl && averageScore !== undefined && averageScore !== null) avgEl.textContent = averageScore + "%";
+  // Total Audits and Average Score KPI cards removed as requested.
 }
 
 function activityLabel(row) {
@@ -627,7 +635,7 @@ async function loadTodayActivity() {
     return;
   }
 
-  list.innerHTML = rows.slice(0, 5).map(row => `
+  list.innerHTML = rows.slice(0, 10).map(row => `
     <div class="activity-row">
       <span class="activity-dot"></span>
       <span class="activity-text">
@@ -728,6 +736,8 @@ async function validateUser(email) {
   if (isAdminLikeRole(data.role)) {
     document.getElementById("adminFilters").style.display = "block";
     document.getElementById("adminDashboardPanel").style.display = "block";
+    const activityBtn = document.getElementById("activityTabBtn");
+    if (activityBtn) activityBtn.style.display = "inline-flex";
     startActivityRefresh();
   }
 
