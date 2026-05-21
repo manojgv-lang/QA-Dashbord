@@ -329,7 +329,8 @@
   .score-good { color: #15803d; font-weight: 800; text-align: center; }
   .score-bad { color: #dc2626; font-weight: 800; text-align: center; }
 
-  #disputePopup {
+  #disputePopup,
+  #challengePopup {
     display: none;
     position: fixed;
     inset: 0;
@@ -444,6 +445,29 @@
   </div>
 </div>
 
+<div id="challengePopup">
+  <div class="popup">
+    <h3>Challenge QA Resolution</h3>
+    <p style="margin:10px 0 16px 0;color:#64748b;line-height:1.5;">Use this only if the agent is not satisfied with the QA resolution. This will notify TL/Manager/Admin over email.</p>
+
+    <label>Agent</label>
+    <input type="text" id="challengeAgent" disabled>
+
+    <label>SL No</label>
+    <input type="text" id="challengeSlNo" disabled>
+
+    <label>QA Resolution</label>
+    <textarea id="challengeResolution" rows="3" disabled></textarea>
+
+    <label>Reason for Challenge</label>
+    <textarea id="challengeReason" rows="4" placeholder="Enter why you are not satisfied with the QA resolution"></textarea>
+
+    <button onclick="closeChallengePopup()">Cancel</button>
+    <button id="submitChallengeBtn" class="danger" onclick="submitChallengeResolution()">Notify TL / Manager</button>
+    <p id="challengeSubmitStatus" class="loading"></p>
+  </div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
@@ -463,6 +487,8 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20-majQxyCLQaSjvkZ
 let CURRENT_USER = null;
 let CURRENT_ROLE = null;
 let CURRENT_REPORT = null;
+let DISPUTES_CACHE = [];
+let CURRENT_CHALLENGE = null;
 
 function setLoading(id, text) {
   document.getElementById(id).textContent = text || "";
@@ -520,7 +546,9 @@ async function validateUser(email) {
 
   CURRENT_ROLE = data.role;
 
-  document.getElementById("role").innerHTML = data.role === "admin" ? '<span class="role-pill role-admin">ADMIN</span>' : '<span class="role-pill role-agent">AGENT</span>';
+  document.getElementById("role").innerHTML = isAdminLikeRole(data.role)
+    ? `<span class="role-pill role-admin">${String(data.role).toUpperCase()}</span>`
+    : '<span class="role-pill role-agent">AGENT</span>';
   document.getElementById("filters").style.display = "block";
 
   const select = document.getElementById("agentSelect");
@@ -533,9 +561,9 @@ async function validateUser(email) {
     select.appendChild(option);
   });
 
-  select.disabled = data.role !== "admin";
+  select.disabled = !isAdminLikeRole(data.role);
 
-  if (data.role === "admin") {
+  if (isAdminLikeRole(data.role)) {
     document.getElementById("adminFilters").style.display = "block";
   }
 }
@@ -1246,6 +1274,7 @@ async function loadDisputes() {
   }
 
   const disputes = data.disputes || [];
+  DISPUTES_CACHE = disputes;
 
   if (!disputes.length) {
     div.innerHTML = `<h2>Dispute Status - ${agent}</h2><p>No disputes raised by this agent.</p>`;
@@ -1266,30 +1295,121 @@ async function loadDisputes() {
           <th>Description</th>
           <th>Status</th>
           <th>QA Reply / Resolution</th>
+          <th>Challenge Status</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
   `;
 
-  disputes.forEach(d => {
+  disputes.forEach((d, index) => {
     const resolved = (d.resolution || "").trim();
+    const challenged = (d.challengeStatus || "").toLowerCase() === "challenged";
+    const rowClass = challenged ? "bad" : (resolved ? "good" : "pending");
+
+    let challengeText = "-";
+    if (challenged) {
+      challengeText = `
+        <b>Challenged</b><br>
+        <small><b>Reason:</b> ${d.challengeReason || ""}</small><br>
+        <small><b>Time:</b> ${d.challengeTime || ""}</small><br>
+        <small><b>Notified:</b> ${d.notificationStatus || ""}</small>
+      `;
+    } else if (resolved) {
+      challengeText = "Resolution accepted / not challenged";
+    } else {
+      challengeText = "Waiting for QA resolution";
+    }
+
+    let action = "-";
+    if (resolved && !challenged) {
+      action = `<button class="danger" style="padding:8px 12px;font-size:12px;" onclick="openChallengePopup(${index})">Challenge Resolution</button>`;
+    }
 
     html += `
-      <tr class="${resolved ? 'good' : 'pending'}">
+      <tr class="${rowClass}">
         <td>${d.timestamp || ""}</td>
         <td>${d.agent || ""}</td>
         <td>${d.slNo || ""}</td>
         <td>${d.from || ""}</td>
         <td>${d.to || ""}</td>
         <td>${d.description || ""}</td>
-        <td>${resolved ? "Resolved" : "Pending"}</td>
+        <td>${challenged ? "Challenged" : (resolved ? "Resolved" : "Pending")}</td>
         <td>${resolved || "QA reply pending"}</td>
+        <td>${challengeText}</td>
+        <td>${action}</td>
       </tr>
     `;
   });
 
   html += `</tbody></table>`;
   div.innerHTML = html;
+}
+
+function openChallengePopup(index) {
+  const dispute = DISPUTES_CACHE[index];
+  if (!dispute) return;
+
+  CURRENT_CHALLENGE = dispute;
+
+  document.getElementById("challengeAgent").value = dispute.agent || "";
+  document.getElementById("challengeSlNo").value = dispute.slNo || "";
+  document.getElementById("challengeResolution").value = dispute.resolution || "";
+  document.getElementById("challengeReason").value = "";
+  setLoading("challengeSubmitStatus", "");
+
+  document.getElementById("challengePopup").style.display = "flex";
+}
+
+function closeChallengePopup() {
+  document.getElementById("challengePopup").style.display = "none";
+  CURRENT_CHALLENGE = null;
+}
+
+async function submitChallengeResolution() {
+  if (!CURRENT_CHALLENGE) {
+    alert("Please select a dispute to challenge.");
+    return;
+  }
+
+  const reason = document.getElementById("challengeReason").value.trim();
+  const btn = document.getElementById("submitChallengeBtn");
+
+  if (!reason) {
+    alert("Please enter reason for challenge.");
+    return;
+  }
+
+  const confirmChallenge = confirm("This will notify TL/Manager/Admin over email. Continue?");
+  if (!confirmChallenge) return;
+
+  try {
+    btn.disabled = true;
+    setLoading("challengeSubmitStatus", "Raising challenge and notifying TL/Manager...");
+
+    const data = await apiCall({
+      action:"challengeDisputeResolution",
+      email:CURRENT_USER,
+      agent:CURRENT_CHALLENGE.agent,
+      slNo:CURRENT_CHALLENGE.slNo,
+      reason:reason
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("challengeSubmitStatus", "");
+      return;
+    }
+
+    alert(data.message || "Challenge raised successfully.");
+    closeChallengePopup();
+    await loadDisputes();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    setLoading("challengeSubmitStatus", "");
+  }
 }
 </script>
 
