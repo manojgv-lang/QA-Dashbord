@@ -1,473 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>QA Dashboard</title>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-  <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-  * { box-sizing: border-box; }
-
-  :root {
-    --bg: #f4f7fb;
-    --card: #ffffff;
-    --text: #0f172a;
-    --muted: #64748b;
-    --border: #e2e8f0;
-    --blue: #2148d8;
-    --blue2: #2563eb;
-    --green: #16a34a;
-    --red: #dc2626;
-    --shadow: 0 18px 45px rgba(15, 23, 42, 0.09);
-    --radius: 24px;
-  }
-
-  body {
-    margin: 0;
-    font-family: 'Inter', Arial, sans-serif;
-    color: var(--text);
-    background:
-      radial-gradient(circle at top left, rgba(37,99,235,0.20), transparent 30%),
-      radial-gradient(circle at top right, rgba(14,165,233,0.16), transparent 28%),
-      linear-gradient(180deg, #edf4ff 0%, #f8fbff 42%, #f4f7fb 100%);
-    padding: 24px;
-    min-height: 100vh;
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0 0 auto 0;
-    height: 230px;
-    background: linear-gradient(135deg, #1438c8, #2563eb 55%, #0f172a);
-    z-index: -1;
-  }
-
-  .card {
-    background: rgba(255,255,255,0.94);
-    border: 1px solid rgba(226,232,240,0.9);
-    border-radius: var(--radius);
-    padding: 28px;
-    margin-bottom: 22px;
-    box-shadow: var(--shadow);
-  }
-
-  body > .card:first-of-type {
-    background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92));
-    border: 1px solid rgba(255,255,255,0.75);
-    overflow: hidden;
-    position: relative;
-  }
-
-  body > .card:first-of-type::after {
-    content: "";
-    position: absolute;
-    right: -70px;
-    top: -80px;
-    width: 230px;
-    height: 230px;
-    border-radius: 999px;
-    background: rgba(37,99,235,0.10);
-  }
-
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-bottom: 22px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .logo {
-    width: 78px;
-    height: 78px;
-    border-radius: 24px;
-    box-shadow: 0 18px 38px rgba(37,99,235,0.30);
-    object-fit: cover;
-  }
-
-  .page-title {
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    color: #0f172a;
-  }
-
-  .page-subtitle {
-    color: var(--muted);
-    margin-top: 5px;
-    font-size: 15px;
-    font-weight: 500;
-  }
-
-  .user-info {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 18px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .info-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-size: 14px;
-  }
-
-  .role-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-  }
-
-  .role-admin { background: #dbeafe; color: #1d4ed8; }
-  .role-agent { background: #dcfce7; color: #15803d; }
-
-  h1, h2, h3 { margin-top: 0; }
-
-  h2 {
-    font-size: 24px;
-    margin-bottom: 20px;
-    letter-spacing: -0.025em;
-  }
-
-  h3 { font-size: 18px; color: #1e293b; }
-
-  label {
-    display: block;
-    color: #334155;
-    font-weight: 700;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-
-  select, input, textarea {
-    width: 100%;
-    border: 1px solid #dbe3ef;
-    border-radius: 16px;
-    background: #ffffff;
-    color: #0f172a;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s ease;
-  }
-
-  select:focus, input:focus, textarea:focus {
-    border-color: var(--blue2);
-    box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
-  }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-
-  button {
-    border: 0;
-    border-radius: 15px;
-    padding: 13px 20px;
-    background: linear-gradient(135deg, var(--blue2), #1d4ed8);
-    color: white;
-    font-weight: 800;
-    font-size: 13px;
-    cursor: pointer;
-    margin-right: 10px;
-    margin-top: 4px;
-    box-shadow: 0 10px 22px rgba(37,99,235,0.18);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
-  }
-
-  button:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(37,99,235,0.25); }
-  button:active { transform: translateY(0); }
-  button:disabled { opacity: 0.55; cursor: not-allowed; }
-
-  .green-btn {
-    background: linear-gradient(135deg, #22c55e, #15803d);
-    box-shadow: 0 10px 22px rgba(22,163,74,0.18);
-  }
-
-  .danger {
-    background: linear-gradient(135deg, #ef4444, #b91c1c);
-    box-shadow: 0 10px 22px rgba(220,38,38,0.18);
-  }
-
-  .loading {
-    color: #2563eb;
-    font-weight: 800;
-    margin-top: 12px;
-    white-space: pre-line;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 18px;
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 12px 28px rgba(15,23,42,0.06);
-  }
-
-  th {
-    background: #eff6ff;
-    color: #1e3a8a;
-    font-size: 13px;
-    font-weight: 800;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid #dbeafe;
-  }
-
-  td {
-    padding: 14px 15px;
-    font-size: 13px;
-    vertical-align: top;
-    border-bottom: 1px solid #eef2f7;
-    line-height: 1.55;
-  }
-
-  tr:last-child td { border-bottom: 0; }
-  tr:hover td { background: #f8fbff; }
-
-  .good { background: #f0fdf4; }
-  .bad { background: #fff1f2; }
-  .pending { background: #fffbeb; }
-
-  .summary-box {
-    background: linear-gradient(135deg, #eff6ff, #ffffff);
-    border: 1px solid #dbeafe;
-    border-left: 6px solid #2563eb;
-    border-radius: 22px;
-    padding: 24px;
-    margin-top: 24px;
-    line-height: 1.75;
-    box-shadow: 0 12px 28px rgba(37,99,235,0.06);
-  }
-
-  .category-title {
-    margin-top: 24px;
-    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
-    border: 1px solid #dbeafe;
-    color: #1e3a8a;
-    padding: 14px 16px;
-    border-radius: 16px;
-    font-weight: 800;
-  }
-
-  .all-agent-table {
-    border-collapse: separate;
-    border-spacing: 0 10px;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .all-agent-table th {
-    background: #eaf2ff;
-    border-bottom: 0;
-  }
-
-  .all-agent-table td {
-    background: white;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .all-agent-table tr td:first-child { border-left: 1px solid var(--border); border-radius: 16px 0 0 16px; }
-  .all-agent-table tr td:last-child { border-right: 1px solid var(--border); border-radius: 0 16px 16px 0; }
-
-  .agent-name-cell { font-weight: 800; }
-  .number-cell { font-weight: 800; text-align: center; }
-  .details-cell { text-align: center; }
-  .details-btn { margin: 0; padding: 9px 14px; border-radius: 12px; }
-
-  .category-detail-row td {
-    border-radius: 18px !important;
-    background: #f8fafc !important;
-    border: 1px solid var(--border) !important;
-  }
-
-  .category-detail-box {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-
-  .category-item {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 13px;
-  }
-
-  .mini-table { max-width: 720px; }
-  .chart-count { font-weight: 800; text-align: center; }
-  .score-good { color: #15803d; font-weight: 800; text-align: center; }
-  .score-bad { color: #dc2626; font-weight: 800; text-align: center; }
-
-  #disputePopup,
-  #resolutionResponsePopup {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(15,23,42,0.58);
-    backdrop-filter: blur(8px);
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-
-  .popup {
-    background: white;
-    width: 430px;
-    max-width: 94%;
-    padding: 26px;
-    border-radius: 24px;
-    box-shadow: 0 30px 70px rgba(0,0,0,0.26);
-  }
-
-  a { color: #2563eb; font-weight: 800; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-
-  @media (max-width: 900px) {
-    body { padding: 14px; }
-    .grid-2 { grid-template-columns: 1fr; gap: 0; }
-    .topbar { align-items: flex-start; }
-    .page-title { font-size: 30px; }
-    .logo { width: 64px; height: 64px; }
-    .category-detail-box { grid-template-columns: 1fr; }
-    table { display: block; overflow-x: auto; }
-  }
-</style>
-</head>
-
-<body>
-
-<div class="card">
-  <div class="topbar">
-    <img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAIAAACx0UUtAAAToUlEQVR4Ae2dT0gb6RvHh5wCOQWCnjwZ8RISiAEPgkgvYqlQUKSnHDyUFaQUJellQdgiJJfdyx6WvRSWPfSyhx7bW2EhZsYNlahrsbhOwW6XpbBqlzVYnN++v8ffNL9kTOZ98yTzzMyzhGUcdTq+72eed573+/zREjmDPzwClEdAo3xzfG88AomcwYzyMkJ9BJhR6jPEppQZZUapjwAzSn2G2I4yo8wo9RFgRqnPENtRZpQZpT4CzCj1GWI7yowyo9RHgBmlPkNsR5lRZpT6CDCj1GeI7SgzyoxSHwFmlPoMsR1lRplR6iPAjFKfIbajzCgzSn0EmFHqM8R2lBllRqmPADNKfYbYjjKjzCj1EWBGqc8Q21FmlBmlPgLMKPUZYjvKjDKj1EeAGaU+Q2xHmVFmlPoIMKPUZ4jtKDPKjFIfAWaU+gyxHWVGmVHqI8CMUp8htqPMKDNKfQSYUeozxHaUGWVGqY8AM0p9htiOMqPMKPURYEapzxDbUWaUGaU+Aswo9RliO8qMMqPUR4AZpT5DbEeZUWaU+ggwo9RnqMWOxrNGLKNH03ok1f0TzxraeFUbqvT0SVbjWS9HiRn1cvRb+Ov6ZSyjJ3LGneX95UdvVjeOun7iWeOb799eNK5Ozy6VP8+e/zk8uQ3/dNc77McPMKO+YTSW0aeX6oWSWSiZa5vHnT+Fknn3/kEiZ1gY/x29/Sea1r2ypsyoPxiNZ42pRQFoZzTt765uHGnJ6ouXHzAQFddYfvQmkhJWfPAfZtSDQZed5njWGJ7ctvnrelAomVOL9dv5XSxALcv66uvftPGq7J2j/Dwz6gNGIyn93oPX7o3oF18eaSNbtd1zREZv53e9eiVlRqkzGs8amblX7gEtls3hye1i2UQE9MXLD1rSGyOayBnMqA8YXX70puv6Dj9QKJn3HrzWxqunZ5dYjF40ribmd7wyoswodUBjGX02v+feiK5tHkdS+pOn77AAtSzrydN3HhpRZpQ0o+AqPXzcZZvJNrGFkjmb3xue3EYE9PTsUhvZ8mrXCVwuXuvpYhpN6wsrB+6NqNhvGqr8rP+FyOjqxpFXW072ngAzSpTReNYYu1Urlt1uiBZK5sT8Tn79EBHQ2u6550aU13qigCZyRiSlu3eV1jaPlx+90ZLVXw//RmR0Nr8XTXuzb28bUWaUKKO27Gm/a3Y+KJbNf7H+6uvfEAF9+uwPb10lG1Ne68lhCq7S6sZRZy7t74I0H88aF40rLEbPP34anal56yoxo+TQtKckltHv3pdwlR4+PtbGq0+f/YEFqGVZpW9NIkaU13pypMazxuhMzb0vXyiZ00v1ifkdREBP3je0RMV+Zjw/4LWeFqayrpKQ5ocquNL8wsqB5/tNzQ8GM0qI0VhGn1qsu99vKpbNsVu11Y0jRCMK0jyRN1EglRmlwmg8a8SzhpSrlF8/1JLVk/cNREanFuseSvPN5tM+ZkapMCqrKhVKZiyjf/P9W0RAv/vhhI6rxIxSQRNmAlQlezup60GhZN5Z3o+kdERAT88uIynPEkJsItsP2I6SgDWa1vPrh+7deSHNj2whpoJYlrW2Kfaw2hHx/Awz6j2j8awxMb/j3lWC/abppTqiEf318G9tiNB+U/ODwYx6zKisq3QtzQ9VcKX52/ldCtJ8M5r2MTPqMaOxjH5ned/9Kl8sm6MzIh4K0Yg+e/4nQVeJGfUYTZgAUJW6ekj2D/QjFeT846exWzVq+002oKyFekxqLCPnKkEqyHc/nCAa0W++f0vZiDKjXjIKrpL7Vb4fqSDUpPlm82kf8/uoZ5hG07p7VWlt8xj2m3BTQe49eE1Kmre5bD5gRr1hVDbhE1JBFlYOEFf5yi+n2shWMw00j5lRDxiVdZWu95tGto7e/oPIqLdZ8+6fB2bUA0ZjGbnaOIWSKD2CmwriedY8UUbt+q7RtKjy2uEDO9tasqqNbPX6SVZJydCytXEKJXNh5SCa1hFTQU7PLmGE3YPi4U8Ozo5Cms7d+wf59cOun+klESH24uWH2u55j58XLz+At0FER4ll9C++dJurtLZ53I9UkGLZpCnNOz4JA2LULrnhZqsFfubfWtqIq9vp2eVsfs/ziQFXSVaax00FOXr7D6lUEEcum08OiFFZxQ8WOG1kC1GVvmhceZswDg+qLRq5OehTlUYiS0oziB2OB8RoNC3nJaxtHhdKQpjGLfTq7Za17CAUy2Zm7tUXX2KmghCX5h1JHRCjsYx+O7/rZqFvti6i9kaighsl6VVWroKrhJ4KctG4ysy9oizNe8koeJHuS8ABqcWyqJk9PLmN6NJeNK5GZzwIoYhnDSlXaW3zOJ41wibNe8loIie6CkklPQKmwqtNVnGzdkTq42D1FdnaOHZXEMSHU7zneN1pyRHBricHtNbDfcQyos6W1IoPiTvaOHL24937g0shhzWk+R2m67F4MrFTQfLrh/SleUdeB8qobGYZzCWoLLhVC0VqxKCMimzHBegKcmd5H1H29Is07z2jsOJL1X0FB194DwnkahyD2ceWdZXWNo9hvwlx082yLIJZ8444Op4cqB1N5ESZg+HJbVnnqVASuzCZuVeIpuWicTUAjTSeNaTKiMKOW6GEmQry40+/E49idkTTPjloRsGUzub33GstsOKDdcGtDidKbPbTeVJwldC7gpyeXQ5PbpOqjWPD5/LAA0ahSLHsRkyxLBoSRNM6YlcXy7Jm83t98iTUVgz0riAe9qdziWDXH/OGUYW3NLCmkZSOmxIpSr73x3mKpuXKiEIqCO77jO+keUdevWEUVnyp/oLgPC2sHGjYob4iKgq7PgfsYEjtsvWj9Mggt9gc8UI56RmjEIuu4DyNztTu3sdMmTj/+AndlEbTch0XwCm89+A1olPobQNFFDrhIp4xCqZUqvwBmNJ+iPjC88VznmRdJbsrCGIqiE+leUeyvWQUMJXKjQRMQcRHNDmWZWEl94CrJPVH9SMVhGaVRkcEu570mFHZclzgOYlXN2wR/2f9LxRTqhwpy9L8TbB6zGgiZ8iWNQRTemd5H13EX370psd9KHjJltr6haCZZ8//RFwW/CvNO2LqPaMKibxgTRM5Ee2GOLUiMmi82st2dyQlVxsH9pumFjGrNIrdNEpdQRyxkzrpPaPwVirVkQhMqZBksEX8XoofQfCh1H4TiGeVX04RnzRfS/OO7JJgFEyXlJ8BmGbmXuEaIcuy1JRDhT8BuoLgLgV0Gig60qZ2kgSjYEoVIqDBDv340++IdkjNeVJwldBTQQIgzTtCTIVRhU7DYEqnl+rxrHH+8RMiprKVuhReqQslM541cPMLvErVcgQL8SQhRhX0Q3CetPEqYia+ZVkiAlrGeVJwle7eP9CSVcTnSjh8Q5VeHD5EqnAvRYhRWPEVIqD7IeK7DxdS2OLtRyoItMLBhYPI1WgxqhbPBnHBuHUPLxpXLisiSTWng/eTqcU6bsjB4LMIB4kvLUbBlM7m96R2cAolE0R83PqxolxCNxE/mpauGyD8vGQVtwstlpA7SPLc/1vkGAVMZSOgoYTs8OQ24hueZVnTS/UOZWcUXCXoCoK73xQkad4RXIqMgvMkpShel+JOVnGLJnSOgFYoIwqpIIi7EL1rY45YkDpJkVEQ8RUioG/nd9FF/JvSRxVcpbXN42hax32K+hGgTQpQun1FFJZR2IeKpvWHj48RV/ybysnKlhEFaX50poZ4b2KPLFjSvOPjQdSOKjtP/RDx2yOgZTsuXL+KDFVwvbrgSfM+YxS2fhScp8zcK9x+r5ZlNZebAxsvleVSLJsT8zu4pVYCKc37jFEoGDExvyO1D3Vd52OoghuRKZyn/+1DybpK/egKcnp2OTpTC6Sq1I4p3bUe7lVWZrRF/FgGs8mBZVliX/O/Amlm7pXUY1Ms43cF6SWGsB0C4meoMwoLqxQTdp8DXBH/5H0jmtYVXCUh1SariKkgkDUfEiNK169vfrJlw97AlAIZiJmWlmV998NJJKVLPTBCmh+v4r54BCNrvnmKOx9Tt6N2GTOFCOjhyW1cN8WyrNGZmvt8a9hvwu0KIsJbhyqdJzVg3/UBo7APNbVYlzJghZIJFSFxt3sAEZcPjHiFHUIuSdm8wxAwFm/6c/zBKChPCjWgJ+Z3cLfNLctaWDlws9sAqSCrG5hZgYGX5h0x9Q2jas4TZOLjyo/CZRnZyq8fdrDr11Y8iVki/SbFy3Feg3TSN4yCKVWIgIbqjbgVIUvfikyPzoz+e8OlbzFL3RZKfmqgiPiQ+IlRtQhoiOTAFfGhgc5N+dbQFUQbx0wFCYk070i2nxgF52l6Sdp5EiI+tu8CEdCOiii8YOC2PguJNB8ERmErSqrCPGyXjt0Se0aIMUcQAd2+2wBdQXBbSPqxgaIjbWonfWZHgVFZNfJaMccW8WH9bXlgIOUfsSvIReNq7JYHjfnUeOrHb/mPUcjEV4iAnl6q474jWpb11de/jc7UbOcJUkFwu4IENWvePc2+ZBScJwhqdv//1Y2jSErH9bVPzy4TOQMemELJhFQQxD0E/zZQdI9g15/0JaN2BLRUztO1u426Z2lZFnQ/srMAnjx9h/jWK1sxpet8+/EH/MooRP3IRkAXy2YiJ5p6IWIENaBn83t3lvdxE1NFA8WQSfOOj5BfGVWLgO6TiA/OkzayhVulMYTSfNAYBeWpsybZ/rYKmfi4sUiWZeXXD3G7gjx5+s7XDRQdaVM76WM7Cqa02a1uJ9LxDGwP4VaEPHnfQIxVDWqVxjAyCqbUfUAnIAthnVqyiuiA477g3pTUrzbHfv8tf9tRMKWJnOEyoLPZrEbTIqIely2Uq4VZmnd8nHzPqHIEtNjLHNlCFIRQAO1aZMpxFoN9MgiMAqYKEdCjMzXcipC9YxrsKo1qz1JAGIUyZs1LuZtjqAiJmxDXC6YQ8heehE+XyAaEUeUI6Omleiyj9wIW4u+GKmveJaD+yF12+cdA7R3HgM4ONrUfbR3VqD1534ikdDai7dMdHDtqR0BTEPEVMA1YA8V21JTPBIpR2IpqCejsYEThW30S8aUwDV4DRWUi238xgIzKRkBfi/jYhRelGGVpvh1N+0zQGAXnSSECuh9tHV1iCtF99pTwQcsIBJBRtQjofoj4bhhlab6FyPYvA8iocgT0bH5PS1YRGyq4YdR9s7L2yQvJmWAyCpiqifjF8uBEfCh5wvtNnR+2wDIKfT/sbLiu3v3nipADFPE793/qPHPh+W5gGVVzniCxczAiPkvzLh+zIDOq1kBHiPhDFdwqI+0vppw17xLQQGmhjn9zNK0rREBPLdZxs+faGQ1nlUbHOep6Msh2FP74WEaXdZ76LeKzNN+Vy+YfCD6j8awxtVhXEfFHtk7eN9pNYO9nxF7seLV5Gvi4wwgEn1HYh1JIH4XG9L0T2XIFIc1z1nzO6ABly7dCwahCBLQt4uOmzEPBiFhGb5kG/rLDCISCUdiHuqmk7U1bp4WSid7WkaX5Dize9K2wMKpWAxpE/KfP/mhZr9W+DFUDxZuAUzgfFkaVI6CFiD+yhdKljqs0KgAa/P3RlkGJpHTZMmYPHx9HUnrvbR1Zmm+ZC/dfhsiOQpT+2K3PJW1vehNtPl8omaKt48hWj6Vybud3Iyl2lSTceRvicDEKK75sBDQ0Tu5FxA9hA0WbsN4PQscoiPiy6aOQia8s4oe8oH2PmIaOUTCls/k92bA9ZRGfpXlmVOUVJ5qWdp7U2jqevG9A4n+P8xTmXw+jHQXnaWJ+R1bEv7O8r41sSVWEFGSzNC+jfLY/jSFldDAivqjSyNJ8b4CGbn+0+RlViIC+7m4zVHEp4rOr1DzgysfhtaNgSmUjoItlIeLP5ve6yqHQUFR5YvgX7REINaOQkCkbAS1E/G5tHblKo01Y7wehZhRMqYLz1FXEZ2m+dzTtK4SdUeg+KhsB3VnEF9L8eJWz5m3IejxgRg1wnmS39DuI+AsrByzN98hl868zo0ICiGX0hZUDWUyHJ7fz64ctzhM3UGzGC+WYGRWMQgS0rPPkKOKPztR4lUdB074IM3otpcYy+vSSdProxPzO2K2aHQHN0rwNFuIBM/pZ7ocVX0ogBREf+oFzlUZELpsvxYx+ZhReTGfze1CfrFAyu36KZVOI+EOVi8YVN1BsBgvxmBn9P0YB00TOmF6q371/4PITy+gcZo8IZculmNFWRsGFimeFs+/yY5PdMrj8JcoIMKMOjKKMLF8EawSYUWaU+ggwo9RnCMsa+fc6zCgzSn0EmFHqM+Rf+4d158woM0p9BJhR6jOEZY38ex1mlBmlPgLMKPUZ8q/9w7pzZpQZpT4CzCj1GcKyRv69DjPKjFIfAWaU+gz51/5h3TkzyoxSHwFmlPoMYVkj/16HGWVGqY8AM0p9hvxr/7DunBllRqmPADNKfYawrJF/r8OMMqPUR4AZpT5D/rV/WHfOjDKj1EeAGaU+Q1jWyL/XYUaZUeojwIxSnyH/2j+sO2dGmVHqI8CMUp8hLGvk3+swo8wo9RFgRqnPkH/tH9adM6PMKPURYEapzxCWNfLvdZhRZpT6CDCj1GfIv/YP686ZUWaU+ggwo9RnCMsa+fc6zCgzSn0EmFHqM+Rf+4d158woM0p9BJhR6jOEZY38ex1mlBmlPgLMKPUZ8q/9w7pzZpQZpT4CzCj1GcKyRv69DjPKjFIfAWaU+gz51/5h3fl/AKnDf5WuSS9DAAAAAElFTkSuQmCC" alt="Volt Logo">
-    <div>
-      <div class="page-title">QA Dashboard</div>
-      <div class="page-subtitle">Agent Audit Performance & Quality Management System</div>
-    </div>
-  </div>
-
-  <button id="loginBtn" onclick="login()">Login with Google</button>
-
-  <div class="user-info">
-    <div class="info-pill"><b>Email:</b> <span id="email">Not logged in</span></div>
-    <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
-  </div>
-
-  <p id="mainStatus" class="loading"></p>
-</div>
-
-<div class="card" id="filters" style="display:none;">
-  <h2>Agent Report Filters</h2>
-
-  <label>Agent</label>
-  <select id="agentSelect"></select>
-
-  <div class="grid-2">
-    <div>
-      <label>From Date</label>
-      <input type="date" id="fromDate">
-    </div>
-    <div>
-      <label>To Date</label>
-      <input type="date" id="toDate">
-    </div>
-  </div>
-
-  <button id="reportBtn" onclick="loadReport()">Generate Agent Report</button>
-  <button class="green-btn" onclick="sendReportEmail()">Send Report</button>
-  <p id="reportStatus" class="loading"></p>
-</div>
-
-<div class="card" id="adminFilters" style="display:none;">
-  <h2>All Agent Summary / Bulk Email</h2>
-
-  <div class="grid-2">
-    <div>
-      <label>From Date</label>
-      <input type="date" id="allFromDate">
-    </div>
-    <div>
-      <label>To Date</label>
-      <input type="date" id="allToDate">
-    </div>
-  </div>
-
-  <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
-  <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
-  <p id="allAgentStatus" class="loading"></p>
-</div>
-
-<div class="card" id="summary" style="display:none;"></div>
-<div class="card" id="allAgentSummary" style="display:none;"></div>
-<div class="card" id="calls" style="display:none;"></div>
-<div class="card" id="disputes" style="display:none;"></div>
-
-<div id="disputePopup">
-  <div class="popup">
-    <h3>Raise Dispute</h3>
-    <label>SL No</label>
-    <input type="text" id="disputeSlNo">
-    <label>Description</label>
-    <textarea id="disputeDesc" rows="4"></textarea>
-    <button onclick="closeDispute()">Cancel</button>
-    <button id="submitDisputeBtn" class="danger" onclick="submitDispute()">Submit</button>
-    <p id="disputeSubmitStatus" class="loading"></p>
-  </div>
-</div>
-
-<div id="resolutionResponsePopup">
-  <div class="popup">
-    <h3>Not Satisfied with Resolution</h3>
-    <p style="margin:10px 0 16px 0;color:#64748b;line-height:1.5;">Please mention why you are not satisfied with the QA resolution. This will notify QA and the agent over email.</p>
-
-    <label>Agent</label>
-    <input type="text" id="responseAgent" disabled>
-
-    <label>SL No</label>
-    <input type="text" id="responseSlNo" disabled>
-
-    <label>QA Resolution</label>
-    <textarea id="responseResolution" rows="3" disabled></textarea>
-
-    <label>Reason / Comment</label>
-    <textarea id="responseReason" rows="4" placeholder="Enter why you are not satisfied with the QA resolution"></textarea>
-
-    <button onclick="closeResolutionResponsePopup()">Cancel</button>
-    <button id="submitResponseBtn" class="danger" onclick="submitNotSatisfiedResponse()">Submit & Notify QA</button>
-    <p id="responseSubmitStatus" class="loading"></p>
-  </div>
-</div>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
@@ -516,6 +46,19 @@ async function apiCall(payload) {
   }
 }
 
+/* NEW: generic activity tracker */
+function trackActivity(action, agent, details) {
+  apiCall({
+    action: "logActivity",
+    email: CURRENT_USER,
+    activity: action,
+    agent: agent || "",
+    details: details || "",
+    browser: navigator.userAgent,
+    device: /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop"
+  });
+}
+
 async function login() {
   const provider = new firebase.auth.GoogleAuthProvider();
   const btn = document.getElementById("loginBtn");
@@ -533,6 +76,9 @@ async function login() {
     await validateUser(CURRENT_USER);
 
     setLoading("mainStatus", "Login successful.");
+
+    // track login
+    trackActivity("Login", "", "User logged in");
   } catch (err) {
     alert(err.message);
     setLoading("mainStatus", "");
@@ -609,6 +155,9 @@ async function loadReport() {
     await loadDisputes();
 
     setLoading("reportStatus", "Agent report loaded successfully.");
+
+    // track report generation
+    trackActivity("Generate Agent Report", agent, from + " to " + to);
   } catch (err) {
     alert(err.message);
   } finally {
@@ -648,6 +197,9 @@ async function sendReportEmail() {
   }
 
   setLoading("reportStatus", "Email sent successfully.");
+
+  // track individual report email
+  trackActivity("Send Individual Report Email", CURRENT_REPORT.agent, agentEmail);
 }
 
 async function bulkSendReports() {
@@ -685,6 +237,9 @@ async function bulkSendReports() {
 
   alert(msg);
   setLoading("allAgentStatus", msg);
+
+  // track bulk report email
+  trackActivity("Send Bulk Report Email", "", from + " to " + to);
 }
 
 function sanitizeEmailText(text) {
@@ -1246,6 +801,9 @@ async function submitDispute() {
 
     alert("Dispute submitted successfully");
 
+    // track dispute raised
+    trackActivity("Dispute Raised", agent, "SL No: " + slNo);
+
     document.getElementById("disputeSlNo").value = "";
     document.getElementById("disputeDesc").value = "";
 
@@ -1381,6 +939,10 @@ async function submitHappyResponse(index) {
   }
 
   alert(data.message || "Response captured successfully.");
+
+  // track happy with resolution
+  trackActivity("Happy with Resolution", dispute.agent, "SL No: " + dispute.slNo);
+
   await loadDisputes();
 }
 
@@ -1441,6 +1003,10 @@ async function submitNotSatisfiedResponse() {
     }
 
     alert(data.message || "Response captured and email sent successfully.");
+
+    // track not satisfied with resolution
+    trackActivity("Not Satisfied with Resolution", CURRENT_RESOLUTION_RESPONSE.agent, "SL No: " + CURRENT_RESOLUTION_RESPONSE.slNo);
+
     closeResolutionResponsePopup();
     await loadDisputes();
   } catch (err) {
@@ -1451,8 +1017,3 @@ async function submitNotSatisfiedResponse() {
   }
 }
 </script>
-
-<div class="fixed-badge">Volt QA System</div>
-
-</body>
-</html>
