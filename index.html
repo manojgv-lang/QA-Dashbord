@@ -202,6 +202,26 @@ a { color:#1d5cff; font-weight:800; text-decoration:none; }
 a:hover { text-decoration:underline; }
 #disputePopup,#resolutionResponsePopup { display:none; position:fixed; inset:0; background:rgba(15,23,42,.58); backdrop-filter:blur(8px); align-items:center; justify-content:center; z-index:9999; }
 .popup { background:white; width:430px; max-width:94%; padding:26px; border-radius:22px; box-shadow:0 30px 70px rgba(0,0,0,.26); }
+
+.chart-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+.chart-kpi-card { background:#ffffff; border:1px solid #e6eaf0; border-radius:18px; padding:18px; box-shadow:0 10px 26px rgba(15,23,42,.06); }
+.chart-kpi-label { color:#64748b; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px; }
+.chart-kpi-value { font-size:28px; font-weight:900; color:#0f172a; }
+.chart-panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px; }
+.chart-panel { background:#fff; border:1px solid #e6eaf0; border-radius:20px; padding:18px; box-shadow:0 10px 26px rgba(15,23,42,.05); }
+.chart-title { font-size:17px; font-weight:900; margin-bottom:14px; color:#0f172a; }
+.bar-row { display:grid; grid-template-columns:160px 1fr 70px; align-items:center; gap:12px; margin-bottom:12px; font-size:13px; }
+.bar-label { font-weight:800; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-track { height:12px; background:#e5e7eb; border-radius:999px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#2563eb,#22c55e); }
+.bar-fill.warn { background:linear-gradient(90deg,#ef4444,#f59e0b); }
+.bar-value { font-weight:900; color:#0f172a; text-align:right; }
+.mis-table th { text-align:center; background:#b7e1cd; color:#0f172a; border-bottom:1px solid #111; }
+.mis-table td { text-align:center; border-bottom:1px solid #e6eaf0; }
+.mis-table .agent-col { text-align:left; font-weight:900; }
+.mis-table .low-cell { background:#f4cccc; }
+.mis-table .good-cell { background:#b7e1cd; font-weight:900; }
+
 @media(max-width: 980px){ .app-shell{display:block;} .sidebar{position:relative;width:100%;height:auto;min-width:0;} .main{width:100%;} .quick-grid{grid-template-columns:1fr 1fr;} .top-header{position:relative;flex-direction:column;align-items:flex-start;} .content{padding:18px;} .grid-2{grid-template-columns:1fr;} .category-detail-box{grid-template-columns:1fr;} table{display:block;overflow-x:auto;} }
 </style>
 </head>
@@ -222,12 +242,12 @@ a:hover { text-decoration:underline; }
         <span class="nav-left"><span class="nav-icon">▥</span><span class="nav-label">Agent Wise Report</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navAll" onclick="showDashboardView('all')">
-        <span class="nav-left"><span class="nav-icon">👥</span><span class="nav-label">All Agent audit Summary </span></span><span class="nav-arrow">›</span>
+        <span class="nav-left"><span class="nav-icon">👥</span><span class="nav-label">All Agent Audit Summary</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navDisputes" onclick="openDisputeDetailsView()">
         <span class="nav-left"><span class="nav-icon">✉</span><span class="nav-label">Dispute Details</span></span><span class="nav-arrow">›</span>
       </button>
-      <button class="nav-item" id="navCharts" onclick="showComingSoon('Report and Charts')">
+      <button class="nav-item" id="navCharts" onclick="showDashboardView('charts')">
         <span class="nav-left"><span class="nav-icon">▣</span><span class="nav-label">Report and Charts</span></span><span class="nav-arrow">›</span>
       </button>
       <button class="nav-item" id="navActivity" onclick="showComingSoon('Activity Logs')">
@@ -282,7 +302,7 @@ a:hover { text-decoration:underline; }
 
       <div id="viewAll" style="display:none;">
         <div class="card" id="adminFilters">
-          <h2>All Agent audit Summary</h2>
+          <h2>All Agent Audit Summary</h2>
           <div class="grid-2">
             <div><label>From Date</label><input type="date" id="allFromDate"></div>
             <div><label>To Date</label><input type="date" id="allToDate"></div>
@@ -292,6 +312,21 @@ a:hover { text-decoration:underline; }
           <p id="allAgentStatus" class="loading"></p>
         </div>
         <div class="card" id="allAgentSummary" style="display:none;"></div>
+      </div>
+
+
+
+      <div id="viewCharts" style="display:none;">
+        <div class="card">
+          <h2>Report and Charts</h2>
+          <div class="grid-2">
+            <div><label>From Date</label><input type="date" id="chartFromDate"></div>
+            <div><label>To Date</label><input type="date" id="chartToDate"></div>
+          </div>
+          <button id="chartBtn" onclick="loadReportCharts()">Generate MIS Report</button>
+          <p id="chartStatus" class="loading"></p>
+        </div>
+        <div class="card" id="chartResults" style="display:none;"></div>
       </div>
 
       <div id="viewDisputes" style="display:none;">
@@ -1397,7 +1432,7 @@ function setActiveNav(name) {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -1436,10 +1471,12 @@ function showDashboardView(name) {
   const agent = document.getElementById("viewAgent");
   const all = document.getElementById("viewAll");
   const disputes = document.getElementById("viewDisputes");
+  const charts = document.getElementById("viewCharts");
 
   if (agent) agent.style.display = "none";
   if (all) all.style.display = "none";
   if (disputes) disputes.style.display = "none";
+  if (charts) charts.style.display = "none";
 
   if (name === "all" && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
@@ -1451,6 +1488,14 @@ function showDashboardView(name) {
   if (agent) agent.style.display = name === "agent" ? "block" : "none";
   if (all) all.style.display = name === "all" ? "block" : "none";
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
+  if (charts) charts.style.display = name === "charts" ? "block" : "none";
+
+  if (name === "charts") {
+    const chartFrom = document.getElementById("chartFromDate");
+    const chartTo = document.getElementById("chartToDate");
+    if (chartFrom && document.getElementById("fromDate")) chartFrom.value = document.getElementById("fromDate").value || chartFrom.value;
+    if (chartTo && document.getElementById("toDate")) chartTo.value = document.getElementById("toDate").value || chartTo.value;
+  }
 
   if (name === "disputes") {
     populateDisputeAgentDropdown();
@@ -1463,6 +1508,156 @@ function showDashboardView(name) {
 
   setActiveNav(name);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+async function loadReportCharts() {
+  const from = document.getElementById("chartFromDate").value;
+  const to = document.getElementById("chartToDate").value;
+  const btn = document.getElementById("chartBtn");
+
+  if (!from || !to) {
+    alert("Please select From Date and To Date for Report and Charts.");
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+    setLoading("chartStatus", "Fetching MIS report data...");
+
+    const data = await apiCall({
+      action: "getReportCharts",
+      email: CURRENT_USER,
+      from: from,
+      to: to
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("chartStatus", "");
+      return;
+    }
+
+    renderReportCharts(data);
+    setLoading("chartStatus", "Report and charts loaded successfully.");
+    trackActivity("Generate Report and Charts", "All Agents", "Period: " + data.period + " | Total audits: " + data.overall.totalCalls);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate MIS Report";
+  }
+}
+
+function renderReportCharts(data) {
+  const div = document.getElementById("chartResults");
+  div.style.display = "block";
+
+  const rows = data.rows || [];
+  const overall = data.overall || {};
+  const overallPercent = data.overallPercent || {};
+
+  const topAgents = [...rows].sort((a,b) => Number(b.auditScore || 0) - Number(a.auditScore || 0)).slice(0, 8);
+  const callAgents = [...rows].sort((a,b) => Number(b.totalCalls || 0) - Number(a.totalCalls || 0)).slice(0, 8);
+  const gaps = [
+    { label: "Call Opening", value: Number(overallPercent.callOpening || 0) },
+    { label: "Issue Understanding", value: Number(overallPercent.issueUnderstanding || 0) },
+    { label: "Resolution Pitched", value: Number(overallPercent.resolutionPitched || 0) },
+    { label: "Followed Process", value: Number(overallPercent.followedProcess || 0) },
+    { label: "Communication Skills", value: Number(overallPercent.communication || 0) }
+  ].sort((a,b) => a.value - b.value);
+
+  let html = `
+    <h2>Audit MIS Report</h2>
+    <p><b>Period:</b> ${data.period}</p>
+    <div class="chart-kpi-grid">
+      <div class="chart-kpi-card"><div class="chart-kpi-label">Total Calls Audited</div><div class="chart-kpi-value">${overall.totalCalls || 0}</div></div>
+      <div class="chart-kpi-card"><div class="chart-kpi-label">Average Audit Score</div><div class="chart-kpi-value">${overall.auditScore || 0}%</div></div>
+      <div class="chart-kpi-card"><div class="chart-kpi-label">Final Score</div><div class="chart-kpi-value">${overall.finalScore || 0}</div></div>
+      <div class="chart-kpi-card"><div class="chart-kpi-label">Agents Covered</div><div class="chart-kpi-value">${rows.length}</div></div>
+    </div>
+
+    <div class="chart-panel-grid">
+      <div class="chart-panel">
+        <div class="chart-title">Audit Score by Agent</div>
+        ${topAgents.map(r => chartBar(r.agent, Number(r.auditScore || 0), "%", Number(r.auditScore || 0) < 85)).join("")}
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Total Calls by Agent</div>
+        ${callAgents.map(r => chartBar(r.agent, Number(r.totalCalls || 0), "", false, Math.max(...callAgents.map(x => Number(x.totalCalls || 0)), 1))).join("")}
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Parameter Health %</div>
+        ${gaps.map(g => chartBar(g.label, g.value, "%", g.value < 90)).join("")}
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Major Gap Focus</div>
+        <p style="line-height:1.7;color:#475569;">Lowest parameter for selected period is <b>${gaps[0] ? gaps[0].label : "-"}</b> with <b>${gaps[0] ? gaps[0].value : 0}%</b>. Use this for coaching and weekly review focus.</p>
+      </div>
+    </div>
+
+    <table class="mis-table">
+      <thead>
+        <tr>
+          <th>Agent Name</th>
+          <th>Total Calls Audited</th>
+          <th>Call Opening Rating</th>
+          <th>Issue Understanding</th>
+          <th>Resolution Pitched</th>
+          <th>Followed Process</th>
+          <th>Communication Skills<br>(Assurance / Empathy)</th>
+          <th>Final Score<br>(Out of 25)</th>
+          <th>Audit Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => misRow(r)).join("")}
+        ${misRow({ agent:"Overall", ...overall }, true)}
+        <tr>
+          <td class="agent-col good-cell">Overall %</td>
+          <td>-</td>
+          <td class="${overallPercent.callOpening < 90 ? 'low-cell' : 'good-cell'}">${overallPercent.callOpening || 0}%</td>
+          <td class="${overallPercent.issueUnderstanding < 90 ? 'low-cell' : 'good-cell'}">${overallPercent.issueUnderstanding || 0}%</td>
+          <td class="${overallPercent.resolutionPitched < 90 ? 'low-cell' : 'good-cell'}">${overallPercent.resolutionPitched || 0}%</td>
+          <td class="${overallPercent.followedProcess < 90 ? 'low-cell' : 'good-cell'}">${overallPercent.followedProcess || 0}%</td>
+          <td class="${overallPercent.communication < 90 ? 'low-cell' : 'good-cell'}">${overallPercent.communication || 0}%</td>
+          <td></td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+
+  div.innerHTML = html;
+}
+
+function chartBar(label, value, suffix, warn, maxOverride) {
+  const max = maxOverride || 100;
+  const width = Math.max(2, Math.min(100, (Number(value || 0) / max) * 100));
+  return `
+    <div class="bar-row">
+      <div class="bar-label" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+      <div class="bar-track"><div class="bar-fill ${warn ? 'warn' : ''}" style="width:${width}%"></div></div>
+      <div class="bar-value">${value}${suffix || ""}</div>
+    </div>
+  `;
+}
+
+function misRow(r, overallRow) {
+  return `
+    <tr>
+      <td class="agent-col ${overallRow ? 'good-cell' : ''}">${escapeHtml(r.agent)}</td>
+      <td>${r.totalCalls || 0}</td>
+      <td>${r.callOpening || 0}</td>
+      <td>${r.issueUnderstanding || 0}</td>
+      <td class="${Number(r.resolutionPitched || 0) < 4.5 ? 'low-cell' : ''}">${r.resolutionPitched || 0}</td>
+      <td class="${Number(r.followedProcess || 0) < 4.5 ? 'low-cell' : ''}">${r.followedProcess || 0}</td>
+      <td class="${Number(r.communication || 0) < 4.5 ? 'low-cell' : ''}">${r.communication || 0}</td>
+      <td class="${overallRow ? 'good-cell' : ''}">${r.finalScore || 0}</td>
+      <td class="${Number(r.auditScore || 0) < 90 ? 'low-cell' : 'good-cell'}">${r.auditScore || 0}%</td>
+    </tr>
+  `;
 }
 
 function showComingSoon(title) {
