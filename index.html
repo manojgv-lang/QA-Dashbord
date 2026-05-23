@@ -256,6 +256,46 @@ a:hover { text-decoration:underline; }
 .mis-table .agent-col { text-align:left; font-weight:900; }
 .mis-table .low-cell { background:#f4cccc; }
 .mis-table .good-cell { background:#b7e1cd; font-weight:900; }
+
+.ai-hero { background:linear-gradient(135deg,#155dfc,#4f46e5,#111827); color:white; border-radius:24px; padding:24px; margin-bottom:18px; box-shadow:0 18px 45px rgba(37,99,235,.18); position:relative; overflow:hidden; }
+.ai-hero:after { content:""; position:absolute; right:-50px; top:-50px; width:180px; height:180px; border-radius:999px; background:rgba(255,255,255,.10); }
+.ai-hero small { color:#c7d2fe; font-weight:900; letter-spacing:.04em; }
+.ai-hero h2 { color:white; margin:8px 0 8px 0; font-size:30px; }
+.ai-month-row { display:grid; grid-template-columns: minmax(220px,320px) 200px; gap:14px; align-items:end; margin-top:18px; position:relative; z-index:1; }
+.ai-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:18px 0; }
+.ai-kpi { background:white; border:1px solid #e2e8f0; border-radius:18px; padding:18px; box-shadow:0 12px 28px rgba(15,23,42,.06); }
+.ai-kpi .label { color:#64748b; text-transform:uppercase; font-weight:900; font-size:11px; }
+.ai-kpi .value { margin-top:8px; font-size:30px; font-weight:950; color:#0f172a; }
+.ai-kpi .sub { margin-top:6px; color:#64748b; font-size:12px; }
+.ai-grid { display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-top:18px; }
+.ai-card { background:white; border:1px solid #e2e8f0; border-radius:22px; padding:20px; box-shadow:0 12px 28px rgba(15,23,42,.06); }
+.ai-card h3 { margin:0 0 8px 0; font-size:20px; }
+.ai-muted { color:#64748b; font-size:13px; margin-bottom:14px; }
+.ai-table { width:100%; border-collapse:separate; border-spacing:0; box-shadow:none; margin-top:8px; border-radius:16px; overflow:hidden; }
+.ai-table th { background:#f8fafc; color:#334155; font-size:12px; text-transform:uppercase; }
+.ai-table td { font-size:13px; }
+.ai-rank { width:32px; height:32px; border-radius:12px; background:#e0f2fe; color:#0369a1; display:inline-flex; align-items:center; justify-content:center; font-weight:950; }
+.ai-badge { border-radius:999px; padding:5px 9px; font-size:12px; font-weight:900; display:inline-block; }
+.ai-badge.good { background:#dcfce7; color:#15803d; }
+.ai-badge.warn { background:#ffedd5; color:#c2410c; }
+.ai-badge.bad { background:#fee2e2; color:#b91c1c; }
+.ai-badge.blue { background:#dbeafe; color:#1d4ed8; }
+.ai-mini-bars { display:grid; gap:12px; }
+.ai-mini-row { display:grid; grid-template-columns:160px 1fr 60px; gap:12px; align-items:center; font-size:13px; font-weight:800; }
+.ai-track { height:12px; border-radius:999px; background:#e5e7eb; overflow:hidden; }
+.ai-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#2563eb,#22c55e); }
+.ai-insight-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:18px; }
+.ai-insight { border:1px solid #dbeafe; background:linear-gradient(135deg,#eff6ff,#fff); border-radius:18px; padding:16px; }
+.ai-insight h4 { margin:0 0 10px 0; font-size:14px; color:#1e3a8a; }
+.ai-insight .big { font-size:28px; font-weight:950; color:#2563eb; }
+.ai-prediction { background:#0f172a; color:white; border-radius:22px; padding:20px; margin-top:18px; }
+.ai-prediction h3 { color:white; }
+.ai-pred-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:14px; }
+.ai-pred-item { background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.10); border-radius:16px; padding:14px; }
+.ai-pred-item small { color:#cbd5e1; font-weight:800; }
+.ai-pred-item b { display:block; margin-top:8px; font-size:18px; }
+@media(max-width:1100px){ .ai-kpi-grid,.ai-grid,.ai-insight-grid,.ai-pred-grid{grid-template-columns:1fr;} .ai-month-row{grid-template-columns:1fr;} .ai-mini-row{grid-template-columns:120px 1fr 50px;} }
+
 @media(max-width:1100px){ .chart-kpi-grid,.chart-panel-grid{grid-template-columns:1fr;} .health-grid{grid-template-columns:1fr 1fr;} .modern-bar-row{grid-template-columns:130px 1fr 55px;} }
 
 @media(max-width: 980px){ .app-shell{display:block;} .sidebar{position:relative;width:100%;height:auto;min-width:0;} .main{width:100%;} .quick-grid{grid-template-columns:1fr 1fr;} .top-header{position:relative;flex-direction:column;align-items:flex-start;} .content{padding:18px;} .grid-2{grid-template-columns:1fr;} .category-detail-box{grid-template-columns:1fr;} table{display:block;overflow-x:auto;} }
@@ -285,6 +325,9 @@ a:hover { text-decoration:underline; }
       </button>
       <button class="nav-item" id="navCharts" onclick="showDashboardView('charts')">
         <span class="nav-left"><span class="nav-icon">▣</span><span class="nav-label">Report and Charts</span></span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navAiInsight" onclick="showDashboardView('aiInsight')">
+        <span class="nav-left"><span class="nav-icon">✧</span><span class="nav-label">AI Insight</span></span><span class="nav-arrow">›</span>
       </button>
 
       <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
@@ -370,6 +413,22 @@ a:hover { text-decoration:underline; }
       </div>
 
 
+
+
+
+      <div id="viewAiInsight" style="display:none;">
+        <div class="ai-hero">
+          <small>AI POWERED QA INTELLIGENCE</small>
+          <h2>Monthly AI Insight</h2>
+          <p style="max-width:720px;margin:0;color:#dbeafe;line-height:1.6;">Select a month to view audit health, improvement percentage vs previous month, leaderboard, repeated gaps and coaching focus.</p>
+          <div class="ai-month-row">
+            <div><label style="color:#dbeafe;">Select Month</label><input type="month" id="aiInsightMonth"></div>
+            <button id="aiInsightBtn" onclick="loadAiInsight()">Generate Insight</button>
+          </div>
+        </div>
+        <div id="aiInsightStatus" class="loading"></div>
+        <div id="aiInsightResults" style="display:none;"></div>
+      </div>
 
       <div id="viewWeekly" style="display:none;">
         <div class="card">
@@ -1698,11 +1757,11 @@ async function submitNotSatisfiedResponse() {
 
 
 function setActiveNav(name) {
-  ["navAgent","navAll","navCharts","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "weekly" ? "navWeekly" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "weekly" ? "navWeekly" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -1742,15 +1801,17 @@ function showDashboardView(name) {
   const all = document.getElementById("viewAll");
   const disputes = document.getElementById("viewDisputes");
   const charts = document.getElementById("viewCharts");
+  const aiInsight = document.getElementById("viewAiInsight");
   const weekly = document.getElementById("viewWeekly");
 
   if (agent) agent.style.display = "none";
   if (all) all.style.display = "none";
   if (disputes) disputes.style.display = "none";
   if (charts) charts.style.display = "none";
+  if (aiInsight) aiInsight.style.display = "none";
   if (weekly) weekly.style.display = "none";
 
-  if ((name === "all" || name === "weekly") && !isAdminLikeRole(CURRENT_ROLE)) {
+  if ((name === "all" || name === "weekly" || name === "aiInsight") && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
     setActiveNav("all");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1761,6 +1822,7 @@ function showDashboardView(name) {
   if (all) all.style.display = name === "all" ? "block" : "none";
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
   if (charts) charts.style.display = name === "charts" ? "block" : "none";
+  if (aiInsight) aiInsight.style.display = name === "aiInsight" ? "block" : "none";
   if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
 
   if (name === "charts") {
@@ -1768,6 +1830,14 @@ function showDashboardView(name) {
     const chartTo = document.getElementById("chartToDate");
     if (chartFrom && document.getElementById("fromDate")) chartFrom.value = document.getElementById("fromDate").value || chartFrom.value;
     if (chartTo && document.getElementById("toDate")) chartTo.value = document.getElementById("toDate").value || chartTo.value;
+  }
+
+  if (name === "aiInsight") {
+    const monthInput = document.getElementById("aiInsightMonth");
+    if (monthInput && !monthInput.value) {
+      const now = new Date();
+      monthInput.value = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+    }
   }
 
   if (name === "weekly") {
@@ -1788,6 +1858,121 @@ function showDashboardView(name) {
 
   setActiveNav(name);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+async function loadAiInsight() {
+  const month = document.getElementById("aiInsightMonth").value;
+  const btn = document.getElementById("aiInsightBtn");
+  if (!month) { alert("Please select month"); return; }
+  try {
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+    setLoading("aiInsightStatus", "Fetching monthly AI insight...");
+    const data = await apiCall({ action:"getAiInsight", email: CURRENT_USER, month: month });
+    if (!data.ok) { alert(data.error); setLoading("aiInsightStatus", ""); return; }
+    renderAiInsight(data);
+    setLoading("aiInsightStatus", "AI Insight loaded successfully.");
+    trackActivity("Generate AI Insight", "All Agents", "Month: " + data.month + " | Avg: " + data.averageScore + "%");
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate Insight";
+  }
+}
+
+function renderAiInsight(data) {
+  const div = document.getElementById("aiInsightResults");
+  div.style.display = "block";
+  const improvement = data.overallImprovement;
+  const improvementText = improvement === null || improvement === undefined ? "NA" : (improvement > 0 ? "+" + improvement + "%" : improvement + "%");
+  const improvementClass = improvement === null || improvement === undefined ? "blue" : (improvement >= 0 ? "good" : "bad");
+  const leaderboard = data.leaderboard || [];
+  const trends = data.agentTrends || [];
+  const insights = data.coachingInsights || [];
+  const gaps = data.repeatedGaps || [];
+  const categories = data.categories || [];
+  const ph = data.parameterHealth || {};
+  const params = [
+    { label:"Call Opening", value:Number(ph.callOpening||0) },
+    { label:"Issue Understanding", value:Number(ph.issueUnderstanding||0) },
+    { label:"Resolution Pitched", value:Number(ph.resolutionPitched||0) },
+    { label:"Followed Process", value:Number(ph.followedProcess||0) },
+    { label:"Communication Skills", value:Number(ph.communication||0) }
+  ].sort((a,b)=>a.value-b.value);
+
+  div.innerHTML = `
+    <div class="ai-kpi-grid">
+      <div class="ai-kpi"><div class="label">Total Audits</div><div class="value">${data.totalAudits || 0}</div><div class="sub">${escapeHtml(data.month)}</div></div>
+      <div class="ai-kpi"><div class="label">Average QA Score</div><div class="value">${data.averageScore || 0}%</div><div class="sub">Selected month</div></div>
+      <div class="ai-kpi"><div class="label">Improvement vs ${escapeHtml(data.previousMonth || "Previous")}</div><div class="value"><span class="ai-badge ${improvementClass}">${improvementText}</span></div><div class="sub">Month-on-month change</div></div>
+      <div class="ai-kpi"><div class="label">Issue Calls / Disputes</div><div class="value">${data.issueCalls || 0} / ${data.disputes || 0}</div><div class="sub">Below 80% / raised disputes</div></div>
+    </div>
+
+    <div class="ai-grid">
+      <div class="ai-card">
+        <h3>Agent-wise Performance Trend</h3>
+        <div class="ai-muted">Current month score compared with previous month</div>
+        <table class="ai-table">
+          <thead><tr><th>Agent</th><th>Calls</th><th>Current</th><th>Previous</th><th>Improvement</th><th>Lowest Parameter</th></tr></thead>
+          <tbody>
+            ${trends.map(r => `<tr><td><b>${escapeHtml(r.agent)}</b></td><td>${r.totalCalls}</td><td>${r.currentScore}%</td><td>${r.previousScore}</td><td>${trendBadge(r.improvement)}</td><td>${escapeHtml((r.lowestParameter||{}).name || "-")} (${(r.lowestParameter||{}).percent || 0}%)</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="ai-card">
+        <h3>Leaderboard</h3>
+        <div class="ai-muted">Based on selected month audit score</div>
+        <div style="display:grid;gap:10px;">
+          ${leaderboard.slice(0,7).map(r => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:16px;background:${r.rank===1?'#fffbeb':'#f8fafc'};"><div style="display:flex;align-items:center;gap:10px;"><span class="ai-rank">${r.rank}</span><div><b>${escapeHtml(r.agent)}</b><div style="font-size:12px;color:#64748b;">${escapeHtml(r.status)} • ${r.totalCalls} calls</div></div></div><div style="text-align:right;"><b>${r.score}%</b><div>${trendBadge(r.improvement)}</div></div></div>`).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-insight-grid">
+      ${insights.map(i => `<div class="ai-insight"><h4>${escapeHtml(i.title)}</h4><div class="big">${escapeHtml(i.value)}</div><p style="margin:8px 0 0 0;color:#475569;line-height:1.6;">${escapeHtml(i.note)}</p></div>`).join("")}
+    </div>
+
+    <div class="ai-grid">
+      <div class="ai-card">
+        <h3>Parameter Health</h3>
+        <div class="ai-muted">Lowest parameter appears first</div>
+        <div class="ai-mini-bars">
+          ${params.map(p => `<div class="ai-mini-row"><span>${escapeHtml(p.label)}</span><div class="ai-track"><div class="ai-fill" style="width:${Math.min(p.value,100)}%;background:${p.value>=90?'linear-gradient(90deg,#2563eb,#22c55e)':p.value>=80?'linear-gradient(90deg,#f97316,#facc15)':'linear-gradient(90deg,#ef4444,#f97316)'}"></div></div><b>${p.value}%</b></div>`).join("")}
+        </div>
+      </div>
+      <div class="ai-card">
+        <h3>Repeated Gaps</h3>
+        <div class="ai-muted">Detected from audit feedback text</div>
+        <div style="display:grid;gap:10px;">
+          ${gaps.length ? gaps.map(g => `<div class="gap-item"><strong>${escapeHtml(g.name)}</strong><span class="ai-badge blue">${g.count}</span></div>`).join("") : `<p style="color:#64748b;">No repeated gap found.</p>`}
+        </div>
+        <h3 style="margin-top:18px;">Top Categories</h3>
+        <div style="display:grid;gap:10px;">
+          ${categories.length ? categories.slice(0,4).map(c => `<div class="gap-item"><strong>${escapeHtml(c.name)}</strong><span class="ai-badge blue">${c.count}</span></div>`).join("") : `<p style="color:#64748b;">No category data found.</p>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-prediction">
+      <h3>Performance Prediction</h3>
+      <div class="ai-pred-grid">
+        <div class="ai-pred-item"><small>Potential Risk</small><b>${escapeHtml((data.prediction||{}).potentialRisk || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Top Stable Agent</small><b>${escapeHtml((data.prediction||{}).topStableAgent || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Most Repeated Issue</small><b>${escapeHtml((data.prediction||{}).mostRepeatedIssue || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Major Focus</small><b>${escapeHtml((data.prediction||{}).majorFocus || "NA")}</b></div>
+      </div>
+    </div>
+  `;
+}
+
+function trendBadge(value) {
+  if (value === null || value === undefined || value === "") return `<span class="ai-badge blue">NA</span>`;
+  const num = Number(value);
+  if (num > 0) return `<span class="ai-badge good">+${num}%</span>`;
+  if (num < 0) return `<span class="ai-badge bad">${num}%</span>`;
+  return `<span class="ai-badge blue">0%</span>`;
 }
 
 
@@ -2064,7 +2249,7 @@ function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
   if (restricted) restricted.style.display = "none";
   showDashboardView("none");
-  ["navAgent","navAll","navCharts","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
