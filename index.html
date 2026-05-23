@@ -200,7 +200,17 @@ tr:hover td { background:#f8fbff; }
 .score-bad { color:#dc2626; font-weight:900; text-align:center; }
 a { color:#1d5cff; font-weight:800; text-decoration:none; }
 a:hover { text-decoration:underline; }
-#disputePopup,#resolutionResponsePopup { display:none; position:fixed; inset:0; background:rgba(15,23,42,.58); backdrop-filter:blur(8px); align-items:center; justify-content:center; z-index:9999; }
+#disputePopup,#resolutionResponsePopup,#emailPreviewPopup { display:none; position:fixed; inset:0; background:rgba(15,23,42,.58); backdrop-filter:blur(8px); align-items:center; justify-content:center; z-index:9999; }
+.email-preview-modal{background:white;width:980px;max-width:96%;max-height:88vh;border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;}
+.email-preview-head{padding:18px 22px;border-bottom:1px solid #e2e8f0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;background:#f8fafc;}
+.email-preview-title{font-size:20px;font-weight:900;color:#0f172a;margin:0 0 4px 0;}
+.email-preview-sub{font-size:13px;color:#64748b;line-height:1.5;}
+.email-preview-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.email-preview-body{padding:18px;overflow:auto;background:#f1f5f9;}
+.email-preview-content{background:#fff;border:1px solid #cbd5e1;border-radius:14px;padding:18px;min-height:360px;outline:none;overflow:auto;}
+.email-preview-content:focus{box-shadow:0 0 0 4px rgba(37,99,235,.12);border-color:#2563eb;}
+.email-preview-footer{padding:14px 22px;border-top:1px solid #e2e8f0;background:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center;}
+.preview-note{font-size:12px;color:#64748b;}
 .popup { background:white; width:430px; max-width:94%; padding:26px; border-radius:22px; box-shadow:0 30px 70px rgba(0,0,0,.26); }
 
 .chart-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
@@ -421,6 +431,29 @@ a:hover { text-decoration:underline; }
   </div>
 </div>
 
+
+<div id="emailPreviewPopup">
+  <div class="email-preview-modal">
+    <div class="email-preview-head">
+      <div>
+        <div class="email-preview-title" id="emailPreviewTitle">Email Preview</div>
+        <div class="email-preview-sub" id="emailPreviewMeta">Review and edit the email before sending.</div>
+      </div>
+      <div class="email-preview-actions">
+        <button type="button" onclick="closeEmailPreview()" style="background:#f1f5f9;color:#0f172a;box-shadow:none;">Cancel</button>
+        <button type="button" class="green-btn" id="emailPreviewSendBtn" onclick="sendPreviewedEmail()">Send Email</button>
+      </div>
+    </div>
+    <div class="email-preview-body">
+      <div id="emailPreviewContent" class="email-preview-content" contenteditable="true"></div>
+    </div>
+    <div class="email-preview-footer">
+      <div class="preview-note">You can directly edit the preview content above. The edited version will be sent.</div>
+      <div class="preview-note" id="emailPreviewStatus"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
@@ -444,6 +477,7 @@ let CURRENT_REPORT = null;
 let ALL_AGENTS = [];
 let DISPUTES_CACHE = [];
 let CURRENT_RESOLUTION_RESPONSE = null;
+let PENDING_EMAIL_SEND = null;
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -513,6 +547,62 @@ function trackActivity(activity, agent, details) {
     browser: getBrowserName(),
     device: getDeviceType()
   }).catch(err => console.log("Activity log failed", err));
+}
+
+
+function openEmailPreview(title, meta, htmlBody, onSend) {
+  const popup = document.getElementById("emailPreviewPopup");
+  const content = document.getElementById("emailPreviewContent");
+  const titleEl = document.getElementById("emailPreviewTitle");
+  const metaEl = document.getElementById("emailPreviewMeta");
+  const statusEl = document.getElementById("emailPreviewStatus");
+  const sendBtn = document.getElementById("emailPreviewSendBtn");
+
+  if (!popup || !content) {
+    alert("Email preview popup is missing.");
+    return;
+  }
+
+  titleEl.textContent = title || "Email Preview";
+  metaEl.textContent = meta || "Review and edit the email before sending.";
+  statusEl.textContent = "";
+  sendBtn.disabled = false;
+  sendBtn.textContent = "Send Email";
+  content.innerHTML = htmlBody || "";
+  PENDING_EMAIL_SEND = onSend;
+  popup.style.display = "flex";
+}
+
+function closeEmailPreview() {
+  const popup = document.getElementById("emailPreviewPopup");
+  if (popup) popup.style.display = "none";
+  PENDING_EMAIL_SEND = null;
+}
+
+async function sendPreviewedEmail() {
+  if (!PENDING_EMAIL_SEND) {
+    alert("No email action found.");
+    return;
+  }
+
+  const sendBtn = document.getElementById("emailPreviewSendBtn");
+  const statusEl = document.getElementById("emailPreviewStatus");
+  const content = document.getElementById("emailPreviewContent");
+  const editedHtml = content ? content.innerHTML : "";
+
+  try {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+    statusEl.textContent = "Sending email...";
+    await PENDING_EMAIL_SEND(editedHtml);
+    statusEl.textContent = "Email sent successfully.";
+    closeEmailPreview();
+  } catch (err) {
+    alert(err.message || err);
+    statusEl.textContent = "Failed to send email.";
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Send Email";
+  }
 }
 
 async function login() {
@@ -630,30 +720,33 @@ async function sendReportEmail() {
   const agentEmail = prompt("Enter agent email ID");
   if (!agentEmail) return;
 
-  const confirmSend = confirm("Send QA report to " + agentEmail + "?");
-  if (!confirmSend) return;
-
-  setLoading("reportStatus", "Sending report email...");
-
   const htmlBody = buildEmailHtml(CURRENT_REPORT);
 
-  const data = await apiCall({
-    action:"sendAgentReportEmail",
-    email:CURRENT_USER,
-    agentName:CURRENT_REPORT.agent,
-    agentEmail:agentEmail,
-    period:CURRENT_REPORT.period,
-    htmlBody:htmlBody
-  });
+  openEmailPreview(
+    "Preview Agent Wise Report Email",
+    "To: " + agentEmail + " | Agent: " + CURRENT_REPORT.agent + " | Period: " + CURRENT_REPORT.period,
+    htmlBody,
+    async function(editedHtml) {
+      setLoading("reportStatus", "Sending report email...");
 
-  if (!data.ok) {
-    alert(data.error);
-    setLoading("reportStatus", "");
-    return;
-  }
+      const data = await apiCall({
+        action:"sendAgentReportEmail",
+        email:CURRENT_USER,
+        agentName:CURRENT_REPORT.agent,
+        agentEmail:agentEmail,
+        period:CURRENT_REPORT.period,
+        htmlBody:editedHtml
+      });
 
-  setLoading("reportStatus", "Email sent successfully.");
-  trackActivity("Send Individual Report Email", CURRENT_REPORT.agent, "Sent to: " + agentEmail + " | Period: " + CURRENT_REPORT.period);
+      if (!data.ok) {
+        setLoading("reportStatus", "");
+        throw new Error(data.error || "Email send failed");
+      }
+
+      setLoading("reportStatus", "Email sent successfully.");
+      trackActivity("Send Individual Report Email", CURRENT_REPORT.agent, "Sent to: " + agentEmail + " | Period: " + CURRENT_REPORT.period);
+    }
+  );
 }
 
 async function bulkSendReports() {
@@ -665,33 +758,50 @@ async function bulkSendReports() {
     return;
   }
 
-  const confirmSend = confirm("This will send QA report emails to all mapped agents for selected date range. Continue?");
-  if (!confirmSend) return;
+  setLoading("allAgentStatus", "Generating sample email preview...");
 
-  setLoading("allAgentStatus", "Sending bulk reports to all agents...");
-
-  const data = await apiCall({
-    action: "bulkSendAgentReports",
+  const previewData = await apiCall({
+    action: "previewBulkAgentReportEmail",
     email: CURRENT_USER,
     from: from,
     to: to
   });
 
-  if (!data.ok) {
-    alert(data.error);
+  if (!previewData.ok) {
+    alert(previewData.error);
     setLoading("allAgentStatus", "");
     return;
   }
 
-  let msg = data.message || "Bulk email completed.";
+  openEmailPreview(
+    "Preview Bulk Report Email",
+    "Sample preview for: " + (previewData.sampleAgent || "First available agent") + " | Total mapped agents: " + (previewData.totalAgents || "-") + " | Period: " + (previewData.period || from + " to " + to),
+    previewData.htmlBody,
+    async function() {
+      setLoading("allAgentStatus", "Sending bulk reports to all agents...");
 
-  if (data.skipped && data.skipped.length) {
-    msg += "\n\nSkipped:\n" + data.skipped.join("\n");
-  }
+      const data = await apiCall({
+        action: "bulkSendAgentReports",
+        email: CURRENT_USER,
+        from: from,
+        to: to
+      });
 
-  alert(msg);
-  setLoading("allAgentStatus", msg);
-  trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
+      if (!data.ok) {
+        setLoading("allAgentStatus", "");
+        throw new Error(data.error || "Bulk email failed");
+      }
+
+      let msg = data.message || "Bulk email completed.";
+      if (data.skipped && data.skipped.length) {
+        msg += "\n\nSkipped:\n" + data.skipped.join("\n");
+      }
+
+      alert(msg);
+      setLoading("allAgentStatus", msg);
+      trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
+    }
+  );
 }
 
 
@@ -1777,16 +1887,13 @@ async function sendWeeklyAuditSummaryEmail() {
     return;
   }
 
-  const ok = confirm("Send Weekly Audit Summary to " + to + "?");
-  if (!ok) return;
-
   try {
     btn.disabled = true;
-    btn.textContent = "Sending...";
-    setLoading("weeklyStatus", "Generating weekly audit summary and sending email...");
+    btn.textContent = "Preparing Preview...";
+    setLoading("weeklyStatus", "Generating weekly audit summary preview...");
 
-    const data = await apiCall({
-      action: "sendWeeklyAuditSummaryEmail",
+    const previewData = await apiCall({
+      action: "previewWeeklyAuditSummaryEmail",
       email: CURRENT_USER,
       to: to,
       cc: cc,
@@ -1794,19 +1901,45 @@ async function sendWeeklyAuditSummaryEmail() {
       toDate: toDate
     });
 
-    if (!data.ok) {
-      alert(data.error);
+    if (!previewData.ok) {
+      alert(previewData.error);
       setLoading("weeklyStatus", "");
       return;
     }
 
-    setLoading("weeklyStatus", data.message || "Weekly Audit Summary sent successfully.");
-    const preview = document.getElementById("weeklyPreview");
-    if (preview) {
-      preview.style.display = "block";
-      preview.innerHTML = `<h2>Last Sent Weekly Summary</h2><p><b>To:</b> ${escapeHtml(to)}</p><p><b>CC:</b> ${escapeHtml(cc || "-")}</p><p><b>Period:</b> ${escapeHtml(data.period || "")}</p><p><b>Status:</b> ${escapeHtml(data.message || "Sent")}</p>`;
-    }
-    trackActivity("Send Weekly Audit Summary", "All Agents", "To: " + to + " | Period: " + (data.period || (from + " to " + toDate)));
+    setLoading("weeklyStatus", "Preview generated. Review and send.");
+
+    openEmailPreview(
+      "Preview Weekly Audit Summary",
+      "To: " + to + " | CC: " + (cc || "-") + " | Period: " + (previewData.period || from + " to " + toDate),
+      previewData.htmlBody,
+      async function(editedHtml) {
+        setLoading("weeklyStatus", "Sending weekly audit summary email...");
+
+        const data = await apiCall({
+          action: "sendWeeklyAuditSummaryEmail",
+          email: CURRENT_USER,
+          to: to,
+          cc: cc,
+          from: from,
+          toDate: toDate,
+          htmlBody: editedHtml
+        });
+
+        if (!data.ok) {
+          setLoading("weeklyStatus", "");
+          throw new Error(data.error || "Weekly summary email failed");
+        }
+
+        setLoading("weeklyStatus", data.message || "Weekly Audit Summary sent successfully.");
+        const preview = document.getElementById("weeklyPreview");
+        if (preview) {
+          preview.style.display = "block";
+          preview.innerHTML = `<h2>Last Sent Weekly Summary</h2><p><b>To:</b> ${escapeHtml(to)}</p><p><b>CC:</b> ${escapeHtml(cc || "-")}</p><p><b>Period:</b> ${escapeHtml(data.period || "")}</p><p><b>Status:</b> ${escapeHtml(data.message || "Sent")}</p>`;
+        }
+        trackActivity("Send Weekly Audit Summary", "All Agents", "To: " + to + " | Period: " + (data.period || (from + " to " + toDate)));
+      }
+    );
   } catch (err) {
     alert(err.message);
   } finally {
