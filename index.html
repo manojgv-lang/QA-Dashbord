@@ -1882,6 +1882,19 @@ async function loadAiInsight() {
   }
 }
 
+function pctOfTotal(value, total) {
+  const v = Number(value || 0);
+  const t = Number(total || 0);
+  if (!t) return 0;
+  return Math.round((v / t) * 100);
+}
+
+function gapPercentageBar(g, total) {
+  const pct = pctOfTotal(g.count, total);
+  const color = pct >= 30 ? 'bad' : pct >= 15 ? 'orange' : 'blue';
+  return `<div class="gap-item"><strong>${escapeHtml(g.name)}</strong><div style="display:flex;align-items:center;gap:10px;min-width:170px;"><div class="ai-track" style="height:8px;min-width:90px;"><div class="ai-fill" style="width:${Math.min(pct,100)}%;background:${pct>=30?'linear-gradient(90deg,#ef4444,#f97316)':pct>=15?'linear-gradient(90deg,#f97316,#facc15)':'linear-gradient(90deg,#2563eb,#22c55e)'}"></div></div><span class="ai-badge ${color}">${pct}%</span></div></div>`;
+}
+
 function renderAiInsight(data) {
   const div = document.getElementById("aiInsightResults");
   div.style.display = "block";
@@ -1908,6 +1921,16 @@ function renderAiInsight(data) {
       <div class="ai-kpi"><div class="label">Average QA Score</div><div class="value">${data.averageScore || 0}%</div><div class="sub">Selected month</div></div>
       <div class="ai-kpi"><div class="label">Improvement vs ${escapeHtml(data.previousMonth || "Previous")}</div><div class="value"><span class="ai-badge ${improvementClass}">${improvementText}</span></div><div class="sub">Month-on-month change</div></div>
       <div class="ai-kpi"><div class="label">Issue Calls / Disputes</div><div class="value">${data.issueCalls || 0} / ${data.disputes || 0}</div><div class="sub">Below 80% / raised disputes</div></div>
+    </div>
+
+    <div class="ai-prediction" style="margin-top:18px;">
+      <h3>Performance Prediction</h3>
+      <div class="ai-pred-grid">
+        <div class="ai-pred-item"><small>Potential Risk</small><b>${escapeHtml((data.prediction||{}).potentialRisk || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Top Stable Agent</small><b>${escapeHtml((data.prediction||{}).topStableAgent || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Most Repeated Issue</small><b>${escapeHtml((data.prediction||{}).mostRepeatedIssue || "NA")}</b></div>
+        <div class="ai-pred-item"><small>Major Focus</small><b>${escapeHtml((data.prediction||{}).majorFocus || "NA")}</b></div>
+      </div>
     </div>
 
     <div class="ai-grid">
@@ -1946,7 +1969,7 @@ function renderAiInsight(data) {
         <h3>Repeated Gaps</h3>
         <div class="ai-muted">Detected from audit feedback text</div>
         <div style="display:grid;gap:10px;">
-          ${gaps.length ? gaps.map(g => `<div class="gap-item"><strong>${escapeHtml(g.name)}</strong><span class="ai-badge blue">${g.count}</span></div>`).join("") : `<p style="color:#64748b;">No repeated gap found.</p>`}
+          ${gaps.length ? gaps.map(g => gapPercentageBar(g, data.totalAudits)).join("") : `<p style="color:#64748b;">No repeated gap found.</p>`}
         </div>
         <h3 style="margin-top:18px;">Top Categories</h3>
         <div style="display:grid;gap:10px;">
@@ -1955,15 +1978,6 @@ function renderAiInsight(data) {
       </div>
     </div>
 
-    <div class="ai-prediction">
-      <h3>Performance Prediction</h3>
-      <div class="ai-pred-grid">
-        <div class="ai-pred-item"><small>Potential Risk</small><b>${escapeHtml((data.prediction||{}).potentialRisk || "NA")}</b></div>
-        <div class="ai-pred-item"><small>Top Stable Agent</small><b>${escapeHtml((data.prediction||{}).topStableAgent || "NA")}</b></div>
-        <div class="ai-pred-item"><small>Most Repeated Issue</small><b>${escapeHtml((data.prediction||{}).mostRepeatedIssue || "NA")}</b></div>
-        <div class="ai-pred-item"><small>Major Focus</small><b>${escapeHtml((data.prediction||{}).majorFocus || "NA")}</b></div>
-      </div>
-    </div>
   `;
 }
 
