@@ -791,7 +791,35 @@ async function systemLogin() {
 }
 
 function applyLoggedInUser(data) {
-  applyLoggedInUser(data);
+  CURRENT_ROLE = data.role;
+
+  document.getElementById("email").innerText = data.email || CURRENT_USER || "";
+
+  document.getElementById("role").innerHTML = isAdminLikeRole(data.role)
+    ? `<span class="role-pill role-admin">${String(data.role).toUpperCase()}</span>`
+    : '<span class="role-pill role-agent">AGENT</span>';
+
+  document.getElementById("filters").style.display = "block";
+
+  const select = document.getElementById("agentSelect");
+  select.innerHTML = "";
+
+  (data.agents || []).forEach(agent => {
+    const option = document.createElement("option");
+    option.value = agent;
+    option.textContent = agent;
+    select.appendChild(option);
+  });
+
+  select.disabled = !isAdminLikeRole(data.role);
+
+  if (isAdminLikeRole(data.role)) {
+    document.getElementById("adminFilters").style.display = "block";
+  } else {
+    document.getElementById("adminFilters").style.display = "none";
+  }
+
+  trackActivity("Login", data.agent || "", "User logged in successfully");
 }
 
 async function validateUser(email) {
