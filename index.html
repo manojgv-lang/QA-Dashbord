@@ -924,7 +924,7 @@ function buildEmailHtml(data) {
         ${emailCompareRow("Critical Issue", c1.criticalIssue || "NA", c2.criticalIssue || "NA")}
       </table>
 
-      ${buildCleanSummaryForEmail(data)}
+      ${buildAreasOfImprovementForEmail(data)}
 
       <p style="margin-top:20px;">
         Regards,<br>
@@ -967,6 +967,118 @@ function buildCleanSummaryForEmail(data) {
       ${summary}
     </div>
   `;
+}
+
+
+function buildAreasOfImprovementForEmail(data) {
+  const agent = data.agent || "Agent";
+  const grouped = {};
+  const categoryOrder = [];
+
+  (data.calls || []).forEach(call => {
+    const points = extractEmailImprovementPoints(call.feedback || "");
+    points.forEach(point => {
+      const category = categorizeEmailImprovementPoint(point);
+      if (!grouped[category]) {
+        grouped[category] = [];
+        categoryOrder.push(category);
+      }
+
+      const normalized = normalizePoint(point);
+      const exists = grouped[category].some(existing => normalizePoint(existing) === normalized);
+      const totalAdded = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+      if (!exists && totalAdded < 10) grouped[category].push(point);
+    });
+  });
+
+  if (!categoryOrder.length) {
+    return `
+      <p style="background:#ffff00;display:inline-block;font-weight:bold;margin:22px 0 8px 0;">Areas of Improvement</p>
+      <p>No major areas of improvement identified for the selected audit period.</p>
+    `;
+  }
+
+  let rows = "";
+  categoryOrder.forEach((category, index) => {
+    const points = grouped[category] || [];
+    const pointHtml = points.length > 1
+      ? `<ul style="margin:0;padding-left:18px;line-height:1.55;">${points.map(p => `<li style="margin-bottom:5px;font-size:12px;line-height:1.55;">${escapeHtml(p)}</li>`).join("")}</ul>`
+      : `<div style="font-size:12px;line-height:1.55;">${escapeHtml(points[0] || "-")}</div>`;
+
+    rows += `
+      <tr>
+        ${index === 0 ? `<td rowspan="${categoryOrder.length}" style="border:1px solid #000;background:#d9ead3;font-weight:bold;padding:8px;width:130px;vertical-align:middle;font-size:12px;line-height:1.5;">${escapeHtml(agent)}</td>` : ""}
+        <td style="border:1px solid #000;padding:8px;width:190px;vertical-align:top;font-size:12px;line-height:1.5;">${escapeHtml(category)}</td>
+        <td style="border:1px solid #000;padding:8px;vertical-align:top;font-size:12px;line-height:1.55;">${pointHtml}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <p style="background:#ffff00;display:inline-block;font-weight:bold;margin:22px 0 8px 0;">Areas of Improvement</p>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:900px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;margin-bottom:18px;">
+      <tr><td colspan="3" style="border:1px solid #000;background:#ffff00;text-align:center;font-weight:bold;padding:7px;font-size:12px;">Areas of Improvement</td></tr>
+      <tr style="background:#b7e1cd;font-weight:bold;text-align:center;">
+        <td style="border:1px solid #000;padding:7px;width:130px;font-size:12px;">Agent Name</td>
+        <td style="border:1px solid #000;padding:7px;width:190px;font-size:12px;">Category</td>
+        <td style="border:1px solid #000;padding:7px;font-size:12px;">Specific Area to Improve</td>
+      </tr>
+      ${rows}
+    </table>
+  `;
+}
+
+function extractEmailImprovementPoints(feedback) {
+  let text = removeMobileNumbers(String(feedback || ""));
+  const lower = text.toLowerCase();
+  const start = lower.indexOf("missed pitch points");
+  if (start !== -1) text = text.substring(start);
+
+  text = text
+    .replace(/good practice/ig, "")
+    .replace(/missed pitch points, uninformed pointers, and red-flagged issues/ig, "")
+    .replace(/missed pitch points/ig, "")
+    .replace(/uninformed pointers/ig, "")
+    .replace(/red-flagged issues/ig, "");
+
+  const raw = text.split(/\n|•|(?:\s-\s)|(?:^-)/);
+  const points = [];
+  const seen = {};
+
+  raw.forEach(item => {
+    const cleaned = cleanEmailImprovementPoint(item);
+    if (!cleaned || cleaned.length < 20) return;
+    const key = normalizePoint(cleaned);
+    if (seen[key]) return;
+    seen[key] = true;
+    points.push(cleaned);
+  });
+
+  return points.slice(0, 6);
+}
+
+function cleanEmailImprovementPoint(text) {
+  if (!text) return "";
+  return removeMobileNumbers(String(text))
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^[-:;,.\s]+/, "")
+    .replace(/\bNA\b$/i, "")
+    .trim();
+}
+
+function categorizeEmailImprovementPoint(point) {
+  const p = String(point || "").toLowerCase();
+  if (p.includes("tone") || p.includes("empathy") || p.includes("rude") || p.includes("command") || p.includes("polite") || p.includes("language")) return "Communication & Tone";
+  if (p.includes("interrupt") || p.includes("listen") || p.includes("listening") || p.includes("patience")) return "Listening & Patience";
+  if (p.includes("process") || p.includes("mandate") || p.includes("tat") || p.includes("closure") || p.includes("follow") || p.includes("email confirmation")) return "Process Adherence";
+  if (p.includes("roi") || p.includes("foreclosure") || p.includes("lien") || p.includes("interest") || p.includes("charges") || p.includes("product")) return "Product Knowledge / Accuracy";
+  if (p.includes("aht") || p.includes("time") || p.includes("callback")) return "Efficiency (AHT)";
+  if (p.includes("retention") || p.includes("retain") || p.includes("close the loan") || p.includes("unpledged")) return "Retention Pitch";
+  if (p.includes("troubleshoot") || p.includes("app") || p.includes("fix") || p.includes("issue")) return "Proactive Troubleshooting";
+  if (p.includes("opening") || p.includes("greeting") || p.includes("energy")) return "Call Opening & Tone";
+  return "Process & Communication";
 }
 
 async function loadAllAgentSummary() {
