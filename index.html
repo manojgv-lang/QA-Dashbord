@@ -420,16 +420,18 @@ a:hover { text-decoration:underline; }
         <div class="ai-hero">
           <small>AI POWERED QA INTELLIGENCE</small>
           <h2>AI Insight</h2>
-          <p style="max-width:720px;margin:0;color:#dbeafe;line-height:1.6;">Toggle month-wise or year-wise to view audit health, improvement percentage, leaderboard, repeated gaps and coaching focus.</p>
-          <div class="ai-month-row" style="grid-template-columns: minmax(180px,220px) minmax(220px,320px) 200px;">
+          <p style="max-width:720px;margin:0;color:#dbeafe;line-height:1.6;">Toggle week-wise, month-wise, or year-wise to view audit health, improvement percentage, leaderboard, repeated gaps and coaching focus.</p>
+          <div class="ai-month-row" style="grid-template-columns: minmax(160px,200px) minmax(220px,300px) minmax(260px,360px) 200px;">
             <div>
               <label style="color:#dbeafe;">Insight Type</label>
               <select id="aiInsightType" onchange="toggleAiInsightPeriod()">
                 <option value="month">Month Wise</option>
+                <option value="week">Week Wise</option>
                 <option value="year">Year Wise</option>
               </select>
             </div>
-            <div id="aiMonthBox"><label style="color:#dbeafe;">Select Month</label><input type="month" id="aiInsightMonth"></div>
+            <div id="aiMonthBox"><label style="color:#dbeafe;">Select Month</label><input type="month" id="aiInsightMonth" onchange="populateAiWeeks()"></div>
+            <div id="aiWeekBox" style="display:none;"><label style="color:#dbeafe;">Select Week (Monday - Sunday)</label><select id="aiInsightWeek"></select></div>
             <div id="aiYearBox" style="display:none;"><label style="color:#dbeafe;">Select Year</label><input type="number" id="aiInsightYear" min="2024" max="2035" placeholder="2026"></div>
             <button id="aiInsightBtn" onclick="loadAiInsight()">Generate Insight</button>
           </div>
@@ -1870,32 +1872,84 @@ function showDashboardView(name) {
 }
 
 
+function formatAiDateLabel(date) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return String(date.getDate()).padStart(2,"0") + "-" + months[date.getMonth()] + "-" + date.getFullYear();
+}
+
+function toISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+
+function populateAiWeeks() {
+  const monthInput = document.getElementById("aiInsightMonth");
+  const weekSelect = document.getElementById("aiInsightWeek");
+  if (!monthInput || !weekSelect || !monthInput.value) return;
+
+  const parts = monthInput.value.split("-");
+  const year = Number(parts[0]);
+  const monthIndex = Number(parts[1]) - 1;
+  const firstDay = new Date(year, monthIndex, 1);
+  const lastDay = new Date(year, monthIndex + 1, 0);
+
+  const firstMonday = new Date(firstDay);
+  const day = firstMonday.getDay(); // Sunday=0, Monday=1
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  firstMonday.setDate(firstMonday.getDate() + diffToMonday);
+
+  weekSelect.innerHTML = "";
+  let weekStart = new Date(firstMonday);
+  let weekNo = 1;
+
+  while (weekStart <= lastDay) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const opt = document.createElement("option");
+    opt.value = toISODate(weekStart);
+    opt.textContent = "Week " + weekNo + ": " + formatAiDateLabel(weekStart) + " to " + formatAiDateLabel(weekEnd);
+    weekSelect.appendChild(opt);
+
+    weekStart.setDate(weekStart.getDate() + 7);
+    weekNo++;
+  }
+}
+
 function toggleAiInsightPeriod() {
   const type = document.getElementById("aiInsightType") ? document.getElementById("aiInsightType").value : "month";
   const monthBox = document.getElementById("aiMonthBox");
+  const weekBox = document.getElementById("aiWeekBox");
   const yearBox = document.getElementById("aiYearBox");
   if (monthBox) monthBox.style.display = type === "year" ? "none" : "block";
+  if (weekBox) weekBox.style.display = type === "week" ? "block" : "none";
   if (yearBox) yearBox.style.display = type === "year" ? "block" : "none";
+  if (type === "week") populateAiWeeks();
 }
 
 async function loadAiInsight() {
   const type = document.getElementById("aiInsightType") ? document.getElementById("aiInsightType").value : "month";
   const month = document.getElementById("aiInsightMonth") ? document.getElementById("aiInsightMonth").value : "";
+  const weekStart = document.getElementById("aiInsightWeek") ? document.getElementById("aiInsightWeek").value : "";
   const year = document.getElementById("aiInsightYear") ? document.getElementById("aiInsightYear").value : "";
   const btn = document.getElementById("aiInsightBtn");
 
-  if (type === "month" && !month) { alert("Please select month"); return; }
+  if ((type === "month" || type === "week") && !month) { alert("Please select month"); return; }
+  if (type === "week" && !weekStart) { alert("Please select week"); return; }
   if (type === "year" && !year) { alert("Please select year"); return; }
 
   try {
     btn.disabled = true;
     btn.textContent = "Generating...";
-    setLoading("aiInsightStatus", type === "year" ? "Fetching yearly AI insight..." : "Fetching monthly AI insight...");
+    setLoading("aiInsightStatus", type === "year" ? "Fetching yearly AI insight..." : type === "week" ? "Fetching weekly AI insight..." : "Fetching monthly AI insight...");
     const data = await apiCall({
       action:"getAiInsight",
       email: CURRENT_USER,
       periodType: type,
       month: month,
+      weekStart: weekStart,
       year: year
     });
     if (!data.ok) { alert(data.error); setLoading("aiInsightStatus", ""); return; }
