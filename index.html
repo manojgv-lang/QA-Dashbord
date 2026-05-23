@@ -766,7 +766,7 @@ async function systemLogin() {
     setLoading("mainStatus", "Verifying system login...");
 
     const data = await apiCall({
-      action: "systemLogin",
+      action: "systemLoginV2",
       email: email,
       password: password
     });
@@ -823,7 +823,7 @@ function applyLoggedInUser(data) {
 }
 
 async function validateUser(email) {
-  const data = await apiCall({ action:"login", email:email });
+  const data = await apiCall({ action:"loginV2", email:email });
 
   if (!data.ok) {
     alert(data.error);
