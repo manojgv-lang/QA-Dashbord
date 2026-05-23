@@ -419,10 +419,18 @@ a:hover { text-decoration:underline; }
       <div id="viewAiInsight" style="display:none;">
         <div class="ai-hero">
           <small>AI POWERED QA INTELLIGENCE</small>
-          <h2>Monthly AI Insight</h2>
-          <p style="max-width:720px;margin:0;color:#dbeafe;line-height:1.6;">Select a month to view audit health, improvement percentage vs previous month, leaderboard, repeated gaps and coaching focus.</p>
-          <div class="ai-month-row">
-            <div><label style="color:#dbeafe;">Select Month</label><input type="month" id="aiInsightMonth"></div>
+          <h2>AI Insight</h2>
+          <p style="max-width:720px;margin:0;color:#dbeafe;line-height:1.6;">Toggle month-wise or year-wise to view audit health, improvement percentage, leaderboard, repeated gaps and coaching focus.</p>
+          <div class="ai-month-row" style="grid-template-columns: minmax(180px,220px) minmax(220px,320px) 200px;">
+            <div>
+              <label style="color:#dbeafe;">Insight Type</label>
+              <select id="aiInsightType" onchange="toggleAiInsightPeriod()">
+                <option value="month">Month Wise</option>
+                <option value="year">Year Wise</option>
+              </select>
+            </div>
+            <div id="aiMonthBox"><label style="color:#dbeafe;">Select Month</label><input type="month" id="aiInsightMonth"></div>
+            <div id="aiYearBox" style="display:none;"><label style="color:#dbeafe;">Select Year</label><input type="number" id="aiInsightYear" min="2024" max="2035" placeholder="2026"></div>
             <button id="aiInsightBtn" onclick="loadAiInsight()">Generate Insight</button>
           </div>
         </div>
@@ -1833,11 +1841,12 @@ function showDashboardView(name) {
   }
 
   if (name === "aiInsight") {
+    const now = new Date();
     const monthInput = document.getElementById("aiInsightMonth");
-    if (monthInput && !monthInput.value) {
-      const now = new Date();
-      monthInput.value = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
-    }
+    const yearInput = document.getElementById("aiInsightYear");
+    if (monthInput && !monthInput.value) monthInput.value = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+    if (yearInput && !yearInput.value) yearInput.value = now.getFullYear();
+    toggleAiInsightPeriod();
   }
 
   if (name === "weekly") {
@@ -1861,19 +1870,38 @@ function showDashboardView(name) {
 }
 
 
+function toggleAiInsightPeriod() {
+  const type = document.getElementById("aiInsightType") ? document.getElementById("aiInsightType").value : "month";
+  const monthBox = document.getElementById("aiMonthBox");
+  const yearBox = document.getElementById("aiYearBox");
+  if (monthBox) monthBox.style.display = type === "year" ? "none" : "block";
+  if (yearBox) yearBox.style.display = type === "year" ? "block" : "none";
+}
+
 async function loadAiInsight() {
-  const month = document.getElementById("aiInsightMonth").value;
+  const type = document.getElementById("aiInsightType") ? document.getElementById("aiInsightType").value : "month";
+  const month = document.getElementById("aiInsightMonth") ? document.getElementById("aiInsightMonth").value : "";
+  const year = document.getElementById("aiInsightYear") ? document.getElementById("aiInsightYear").value : "";
   const btn = document.getElementById("aiInsightBtn");
-  if (!month) { alert("Please select month"); return; }
+
+  if (type === "month" && !month) { alert("Please select month"); return; }
+  if (type === "year" && !year) { alert("Please select year"); return; }
+
   try {
     btn.disabled = true;
     btn.textContent = "Generating...";
-    setLoading("aiInsightStatus", "Fetching monthly AI insight...");
-    const data = await apiCall({ action:"getAiInsight", email: CURRENT_USER, month: month });
+    setLoading("aiInsightStatus", type === "year" ? "Fetching yearly AI insight..." : "Fetching monthly AI insight...");
+    const data = await apiCall({
+      action:"getAiInsight",
+      email: CURRENT_USER,
+      periodType: type,
+      month: month,
+      year: year
+    });
     if (!data.ok) { alert(data.error); setLoading("aiInsightStatus", ""); return; }
     renderAiInsight(data);
     setLoading("aiInsightStatus", "AI Insight loaded successfully.");
-    trackActivity("Generate AI Insight", "All Agents", "Month: " + data.month + " | Avg: " + data.averageScore + "%");
+    trackActivity("Generate AI Insight", "All Agents", "Period: " + (data.periodLabel || data.month) + " | Avg: " + data.averageScore + "%");
   } catch (err) {
     alert(err.message);
   } finally {
@@ -1917,9 +1945,9 @@ function renderAiInsight(data) {
 
   div.innerHTML = `
     <div class="ai-kpi-grid">
-      <div class="ai-kpi"><div class="label">Total Audits</div><div class="value">${data.totalAudits || 0}</div><div class="sub">${escapeHtml(data.month)}</div></div>
-      <div class="ai-kpi"><div class="label">Average QA Score</div><div class="value">${data.averageScore || 0}%</div><div class="sub">Selected month</div></div>
-      <div class="ai-kpi"><div class="label">Improvement vs ${escapeHtml(data.previousMonth || "Previous")}</div><div class="value"><span class="ai-badge ${improvementClass}">${improvementText}</span></div><div class="sub">Month-on-month change</div></div>
+      <div class="ai-kpi"><div class="label">Total Audits</div><div class="value">${data.totalAudits || 0}</div><div class="sub">${escapeHtml(data.periodLabel || data.month)}</div></div>
+      <div class="ai-kpi"><div class="label">Average QA Score</div><div class="value">${data.averageScore || 0}%</div><div class="sub">Selected period</div></div>
+      <div class="ai-kpi"><div class="label">Improvement vs ${escapeHtml(data.previousMonth || "Previous")}</div><div class="value"><span class="ai-badge ${improvementClass}">${improvementText}</span></div><div class="sub">Period comparison</div></div>
       <div class="ai-kpi"><div class="label">Issue Calls / Disputes</div><div class="value">${data.issueCalls || 0} / ${data.disputes || 0}</div><div class="sub">Below 80% / raised disputes</div></div>
     </div>
 
@@ -1936,7 +1964,7 @@ function renderAiInsight(data) {
     <div class="ai-grid">
       <div class="ai-card">
         <h3>Agent-wise Performance Trend</h3>
-        <div class="ai-muted">Current month score compared with previous month</div>
+        <div class="ai-muted">Current period score compared with previous period</div>
         <table class="ai-table">
           <thead><tr><th>Agent</th><th>Calls</th><th>Current</th><th>Previous</th><th>Improvement</th><th>Lowest Parameter</th></tr></thead>
           <tbody>
@@ -1946,7 +1974,7 @@ function renderAiInsight(data) {
       </div>
       <div class="ai-card">
         <h3>Leaderboard</h3>
-        <div class="ai-muted">Based on selected month audit score</div>
+        <div class="ai-muted">Based on selected period audit score</div>
         <div style="display:grid;gap:10px;">
           ${leaderboard.slice(0,7).map(r => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:16px;background:${r.rank===1?'#fffbeb':'#f8fafc'};"><div style="display:flex;align-items:center;gap:10px;"><span class="ai-rank">${r.rank}</span><div><b>${escapeHtml(r.agent)}</b><div style="font-size:12px;color:#64748b;">${escapeHtml(r.status)} • ${r.totalCalls} calls</div></div></div><div style="text-align:right;"><b>${r.score}%</b><div>${trendBadge(r.improvement)}</div></div></div>`).join("")}
         </div>
@@ -1967,7 +1995,7 @@ function renderAiInsight(data) {
       </div>
       <div class="ai-card">
         <h3>Repeated Gaps</h3>
-        <div class="ai-muted">Detected from audit feedback text</div>
+        <div class="ai-muted">Detected from selected period audit feedback text</div>
         <div style="display:grid;gap:10px;">
           ${gaps.length ? gaps.map(g => gapPercentageBar(g, data.totalAudits)).join("") : `<p style="color:#64748b;">No repeated gap found.</p>`}
         </div>
