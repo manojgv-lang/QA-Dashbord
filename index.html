@@ -276,6 +276,10 @@ a:hover { text-decoration:underline; }
       <button class="nav-item" id="navCharts" onclick="showDashboardView('charts')">
         <span class="nav-left"><span class="nav-icon">▣</span><span class="nav-label">Report and Charts</span></span><span class="nav-arrow">›</span>
       </button>
+
+      <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
+        <span class="nav-left"><span class="nav-icon">✦</span><span class="nav-label">Weekly Audit Summary</span></span><span class="nav-arrow">›</span>
+      </button>
       <button class="nav-item" id="navActivity" onclick="showComingSoon('Activity Logs')">
         <span class="nav-left"><span class="nav-icon">☰</span><span class="nav-label">Activity Logs</span></span><span class="nav-arrow">›</span>
       </button>
@@ -353,6 +357,24 @@ a:hover { text-decoration:underline; }
           <p id="chartStatus" class="loading"></p>
         </div>
         <div class="card" id="chartResults" style="display:none;"></div>
+      </div>
+
+
+
+      <div id="viewWeekly" style="display:none;">
+        <div class="card">
+          <h2>Weekly Audit Summary Email</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Generate the weekly QA summary email in the same format used for stakeholder updates. For now, enter recipients manually.</p>
+          <div class="grid-2">
+            <div><label>To Email ID(s)</label><input type="text" id="weeklyTo" placeholder="example@voltmoney.in, another@voltmoney.in"></div>
+            <div><label>CC Email ID(s)</label><input type="text" id="weeklyCc" placeholder="optional"></div>
+            <div><label>From Date</label><input type="date" id="weeklyFromDate"></div>
+            <div><label>To Date</label><input type="date" id="weeklyToDate"></div>
+          </div>
+          <button id="weeklyBtn" class="green-btn" onclick="sendWeeklyAuditSummaryEmail()">Send Weekly Audit Summary</button>
+          <p id="weeklyStatus" class="loading"></p>
+        </div>
+        <div class="card" id="weeklyPreview" style="display:none;"></div>
       </div>
 
       <div id="viewDisputes" style="display:none;">
@@ -1454,11 +1476,11 @@ async function submitNotSatisfiedResponse() {
 
 
 function setActiveNav(name) {
-  ["navAgent","navAll","navCharts","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "weekly" ? "navWeekly" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -1498,13 +1520,15 @@ function showDashboardView(name) {
   const all = document.getElementById("viewAll");
   const disputes = document.getElementById("viewDisputes");
   const charts = document.getElementById("viewCharts");
+  const weekly = document.getElementById("viewWeekly");
 
   if (agent) agent.style.display = "none";
   if (all) all.style.display = "none";
   if (disputes) disputes.style.display = "none";
   if (charts) charts.style.display = "none";
+  if (weekly) weekly.style.display = "none";
 
-  if (name === "all" && !isAdminLikeRole(CURRENT_ROLE)) {
+  if ((name === "all" || name === "weekly") && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
     setActiveNav("all");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1515,12 +1539,20 @@ function showDashboardView(name) {
   if (all) all.style.display = name === "all" ? "block" : "none";
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
   if (charts) charts.style.display = name === "charts" ? "block" : "none";
+  if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
 
   if (name === "charts") {
     const chartFrom = document.getElementById("chartFromDate");
     const chartTo = document.getElementById("chartToDate");
     if (chartFrom && document.getElementById("fromDate")) chartFrom.value = document.getElementById("fromDate").value || chartFrom.value;
     if (chartTo && document.getElementById("toDate")) chartTo.value = document.getElementById("toDate").value || chartTo.value;
+  }
+
+  if (name === "weekly") {
+    const weeklyFrom = document.getElementById("weeklyFromDate");
+    const weeklyTo = document.getElementById("weeklyToDate");
+    if (weeklyFrom && document.getElementById("fromDate")) weeklyFrom.value = document.getElementById("fromDate").value || weeklyFrom.value;
+    if (weeklyTo && document.getElementById("toDate")) weeklyTo.value = document.getElementById("toDate").value || weeklyTo.value;
   }
 
   if (name === "disputes") {
@@ -1728,11 +1760,66 @@ function misRow(r, overallRow) {
   `;
 }
 
+
+async function sendWeeklyAuditSummaryEmail() {
+  const to = document.getElementById("weeklyTo").value.trim();
+  const cc = document.getElementById("weeklyCc").value.trim();
+  const from = document.getElementById("weeklyFromDate").value;
+  const toDate = document.getElementById("weeklyToDate").value;
+  const btn = document.getElementById("weeklyBtn");
+
+  if (!to) {
+    alert("Please enter To email ID.");
+    return;
+  }
+  if (!from || !toDate) {
+    alert("Please select From Date and To Date.");
+    return;
+  }
+
+  const ok = confirm("Send Weekly Audit Summary to " + to + "?");
+  if (!ok) return;
+
+  try {
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+    setLoading("weeklyStatus", "Generating weekly audit summary and sending email...");
+
+    const data = await apiCall({
+      action: "sendWeeklyAuditSummaryEmail",
+      email: CURRENT_USER,
+      to: to,
+      cc: cc,
+      from: from,
+      toDate: toDate
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("weeklyStatus", "");
+      return;
+    }
+
+    setLoading("weeklyStatus", data.message || "Weekly Audit Summary sent successfully.");
+    const preview = document.getElementById("weeklyPreview");
+    if (preview) {
+      preview.style.display = "block";
+      preview.innerHTML = `<h2>Last Sent Weekly Summary</h2><p><b>To:</b> ${escapeHtml(to)}</p><p><b>CC:</b> ${escapeHtml(cc || "-")}</p><p><b>Period:</b> ${escapeHtml(data.period || "")}</p><p><b>Status:</b> ${escapeHtml(data.message || "Sent")}</p>`;
+    }
+    trackActivity("Send Weekly Audit Summary", "All Agents", "To: " + to + " | Period: " + (data.period || (from + " to " + toDate)));
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Send Weekly Audit Summary";
+  }
+}
+
 function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
   if (restricted) restricted.style.display = "none";
   showDashboardView("none");
-  ["navAgent","navAll","navCharts","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
