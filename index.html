@@ -389,6 +389,14 @@ a:hover { text-decoration:underline; }
           <div class="grid-2">
             <div><label>From Date</label><input type="date" id="allFromDate"></div>
             <div><label>To Date</label><input type="date" id="allToDate"></div>
+            <div>
+              <label>Default CC</label>
+              <input type="text" id="bulkDefaultCc" value="ce@voltmoney.in, vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in" disabled>
+            </div>
+            <div>
+              <label>Additional CC (Optional)</label>
+              <input type="text" id="bulkExtraCc" placeholder="Add extra CC email IDs, comma separated">
+            </div>
           </div>
           <button id="allAgentBtn" onclick="loadAllAgentSummary()">Generate All-Agent Summary</button>
           <button class="green-btn" onclick="bulkSendReports()">Send Bulk Reports to All Agents</button>
@@ -445,8 +453,9 @@ a:hover { text-decoration:underline; }
           <h2>Weekly Audit Summary Email</h2>
           <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Generate the weekly QA summary email in the same format used for stakeholder updates. For now, enter recipients manually.</p>
           <div class="grid-2">
-            <div><label>To Email ID(s)</label><input type="text" id="weeklyTo" placeholder="example@voltmoney.in, another@voltmoney.in"></div>
-            <div><label>CC Email ID(s)</label><input type="text" id="weeklyCc" placeholder="optional"></div>
+            <div><label>To Email ID(s)</label><input type="text" id="weeklyTo" value="ce@voltmoney.in" placeholder="example@voltmoney.in"></div>
+            <div><label>Default CC</label><input type="text" id="weeklyCc" value="vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in"></div>
+            <div><label>Additional CC (Optional)</label><input type="text" id="weeklyExtraCc" placeholder="Add extra CC email IDs, comma separated"></div>
             <div><label>From Date</label><input type="date" id="weeklyFromDate"></div>
             <div><label>To Date</label><input type="date" id="weeklyToDate"></div>
           </div>
@@ -602,6 +611,35 @@ function getDeviceType() {
   const ua = navigator.userAgent || "";
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return "Mobile / Tablet";
   return "Desktop";
+}
+
+function mergeEmailLists() {
+  const seen = {};
+  const emails = [];
+  Array.from(arguments).forEach(list => {
+    String(list || "").split(",").forEach(item => {
+      const email = item.trim().toLowerCase();
+      if (email && !seen[email]) {
+        seen[email] = true;
+        emails.push(email);
+      }
+    });
+  });
+  return emails.join(", ");
+}
+
+function getBulkCcList() {
+  return mergeEmailLists(
+    document.getElementById("bulkDefaultCc")?.value || "ce@voltmoney.in, vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in",
+    document.getElementById("bulkExtraCc")?.value || ""
+  );
+}
+
+function getWeeklyCcList() {
+  return mergeEmailLists(
+    document.getElementById("weeklyCc")?.value || "vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in",
+    document.getElementById("weeklyExtraCc")?.value || ""
+  );
 }
 
 function trackActivity(activity, agent, details) {
@@ -821,6 +859,7 @@ async function sendReportEmail() {
 async function bulkSendReports() {
   const from = document.getElementById("allFromDate").value;
   const to = document.getElementById("allToDate").value;
+  const cc = getBulkCcList();
 
   if (!from || !to) {
     alert("Please select From Date and To Date for bulk report.");
@@ -833,7 +872,8 @@ async function bulkSendReports() {
     action: "previewBulkAgentReportEmail",
     email: CURRENT_USER,
     from: from,
-    to: to
+    to: to,
+    cc: cc
   });
 
   if (!previewData.ok) {
@@ -844,7 +884,7 @@ async function bulkSendReports() {
 
   openEmailPreview(
     "Preview Bulk Report Email",
-    "Sample preview for: " + (previewData.sampleAgent || "First available agent") + " | Total mapped agents: " + (previewData.totalAgents || "-") + " | Period: " + (previewData.period || from + " to " + to),
+    "Sample To: " + (previewData.sampleEmail || "-") + " | CC: " + (cc || "-") + " | Sample Agent: " + (previewData.sampleAgent || "First available agent") + " | Total mapped agents: " + (previewData.totalAgents || "-") + " | Period: " + (previewData.period || from + " to " + to),
     previewData.htmlBody,
     async function() {
       setLoading("allAgentStatus", "Sending bulk reports to all agents...");
@@ -853,7 +893,8 @@ async function bulkSendReports() {
         action: "bulkSendAgentReports",
         email: CURRENT_USER,
         from: from,
-        to: to
+        to: to,
+        cc: cc
       });
 
       if (!data.ok) {
@@ -868,7 +909,7 @@ async function bulkSendReports() {
 
       alert(msg);
       setLoading("allAgentStatus", msg);
-      trackActivity("Send Bulk Report Email", "All Agents", "Period: " + from + " to " + to + " | " + msg);
+      trackActivity("Send Bulk Report Email", "All Agents", "CC: " + (cc || "-") + " | Period: " + from + " to " + to + " | " + msg);
     }
   );
 }
@@ -2266,7 +2307,7 @@ function misRow(r, overallRow) {
 
 async function sendWeeklyAuditSummaryEmail() {
   const to = document.getElementById("weeklyTo").value.trim();
-  const cc = document.getElementById("weeklyCc").value.trim();
+  const cc = getWeeklyCcList();
   const from = document.getElementById("weeklyFromDate").value;
   const toDate = document.getElementById("weeklyToDate").value;
   const btn = document.getElementById("weeklyBtn");
