@@ -350,6 +350,18 @@ a:hover { text-decoration:underline; }
           <span id="mainStatus" class="loading"></span>
           <button id="loginBtn" class="login-main-btn" onclick="login()">Login with Google</button>
         </div>
+        <p class="login-divider-note">For DSP / Microsoft users, use system login below.</p>
+        <div class="system-login-box">
+          <div class="mini-field">
+            <label>System Email / User ID</label>
+            <input type="email" id="systemEmail" placeholder="ce@voltmoney.in">
+          </div>
+          <div class="mini-field">
+            <label>Password</label>
+            <input type="password" id="systemPassword" placeholder="Enter password">
+          </div>
+          <button id="systemLoginBtn" class="system-login-btn" onclick="systemLogin()">System Login</button>
+        </div>
       </div>
       <div class="header-actions"></div>
     </header>
@@ -737,6 +749,51 @@ async function login() {
   }
 }
 
+
+async function systemLogin() {
+  const email = document.getElementById("systemEmail").value.trim();
+  const password = document.getElementById("systemPassword").value.trim();
+  const btn = document.getElementById("systemLoginBtn");
+
+  if (!email || !password) {
+    alert("Please enter system email and password.");
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = "Logging in...";
+    setLoading("mainStatus", "Verifying system login...");
+
+    const data = await apiCall({
+      action: "systemLogin",
+      email: email,
+      password: password
+    });
+
+    if (!data.ok) {
+      alert(data.error || "System login failed.");
+      setLoading("mainStatus", "");
+      return;
+    }
+
+    CURRENT_USER = data.email;
+    document.getElementById("email").innerText = CURRENT_USER;
+    applyLoggedInUser(data);
+    setLoading("mainStatus", "System login successful.");
+  } catch (err) {
+    alert(err.message || err);
+    setLoading("mainStatus", "");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "System Login";
+  }
+}
+
+function applyLoggedInUser(data) {
+  applyLoggedInUser(data);
+}
+
 async function validateUser(email) {
   const data = await apiCall({ action:"login", email:email });
 
@@ -745,34 +802,7 @@ async function validateUser(email) {
     return;
   }
 
-  CURRENT_ROLE = data.role;
-  CURRENT_AGENT = data.agent || "";
-
-  document.getElementById("role").innerHTML = isAdminLikeRole(data.role)
-    ? `<span class="role-pill role-admin">${String(data.role).toUpperCase()}</span>`
-    : '<span class="role-pill role-agent">AGENT</span>';
-  document.getElementById("filters").style.display = "block";
-
-  ALL_AGENTS = data.agents || [];
-
-  const select = document.getElementById("agentSelect");
-  select.innerHTML = "";
-
-  ALL_AGENTS.forEach(agent => {
-    const option = document.createElement("option");
-    option.value = agent;
-    option.textContent = agent;
-    select.appendChild(option);
-  });
-
-  select.disabled = !isAdminLikeRole(data.role);
-  populateDisputeAgentDropdown();
-
-  if (isAdminLikeRole(data.role)) {
-    document.getElementById("adminFilters").style.display = "block";
-  }
-
-  trackActivity("Login", data.agent || "", "User logged in successfully");
+  applyLoggedInUser(data);
 }
 
 async function loadReport() {
