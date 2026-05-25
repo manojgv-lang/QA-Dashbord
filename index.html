@@ -298,6 +298,31 @@ a:hover { text-decoration:underline; }
 
 @media(max-width:1100px){ .chart-kpi-grid,.chart-panel-grid{grid-template-columns:1fr;} .health-grid{grid-template-columns:1fr 1fr;} .modern-bar-row{grid-template-columns:130px 1fr 55px;} }
 
+
+
+.system-login-toggle-btn {
+  background: #0f172a !important;
+  color: #fff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.18) !important;
+  padding: 10px 16px !important;
+  border-radius: 999px !important;
+  margin-left: 6px !important;
+}
+.system-login-toggle-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 30px rgba(15,23,42,.24) !important; }
+.system-login-box {
+  display: none;
+  max-width: 520px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+.system-login-box.open { display: block; }
+.system-login-box input { margin-bottom: 12px; }
+.system-login-btn { background: linear-gradient(135deg,#1d5cff,#0f64ff) !important; color:#fff !important; }
+
 @media(max-width: 980px){ .app-shell{display:block;} .sidebar{position:relative;width:100%;height:auto;min-width:0;} .main{width:100%;} .quick-grid{grid-template-columns:1fr 1fr;} .top-header{position:relative;flex-direction:column;align-items:flex-start;} .content{padding:18px;} .grid-2{grid-template-columns:1fr;} .category-detail-box{grid-template-columns:1fr;} table{display:block;overflow-x:auto;} }
 </style>
 </head>
@@ -349,18 +374,18 @@ a:hover { text-decoration:underline; }
           <div class="info-pill"><b>Role:</b> <span id="role">-</span></div>
           <span id="mainStatus" class="loading"></span>
           <button id="loginBtn" class="login-main-btn" onclick="login()">Login with Google</button>
+          <button id="systemLoginToggleBtn" class="system-login-toggle-btn" onclick="toggleSystemLogin()">System Login</button>
         </div>
-        <p class="login-divider-note">For DSP / Microsoft users, use system login below.</p>
-        <div class="system-login-box">
+        <div class="system-login-box" id="systemLoginBox">
           <div class="mini-field">
-            <label>System Email / User ID</label>
-            <input type="email" id="systemEmail" placeholder="ce@voltmoney.in">
+            <label>User ID</label>
+            <input type="email" id="systemEmail" placeholder="User ID" autocomplete="off" value="">
           </div>
           <div class="mini-field">
             <label>Password</label>
-            <input type="password" id="systemPassword" placeholder="Enter password">
+            <input type="password" id="systemPassword" placeholder="Password" autocomplete="new-password" value="">
           </div>
-          <button id="systemLoginBtn" class="system-login-btn" onclick="systemLogin()">System Login</button>
+          <button id="systemLoginBtn" class="system-login-btn" onclick="systemLogin()">Login</button>
         </div>
       </div>
       <div class="header-actions"></div>
@@ -739,6 +764,7 @@ async function login() {
 
     setLoading("mainStatus", "Verifying access...");
     await validateUser(CURRENT_USER);
+    hideSystemLoginBox();
 
     setLoading("mainStatus", "Login successful.");
   } catch (err) {
@@ -749,6 +775,21 @@ async function login() {
   }
 }
 
+
+function toggleSystemLogin() {
+  const box = document.getElementById("systemLoginBox");
+  if (!box) return;
+  box.classList.toggle("open");
+}
+
+function hideSystemLoginBox() {
+  const box = document.getElementById("systemLoginBox");
+  if (box) box.classList.remove("open");
+  const emailInput = document.getElementById("systemEmail");
+  const passwordInput = document.getElementById("systemPassword");
+  if (emailInput) emailInput.value = "";
+  if (passwordInput) passwordInput.value = "";
+}
 
 async function systemLogin() {
   const email = document.getElementById("systemEmail").value.trim();
@@ -780,13 +821,14 @@ async function systemLogin() {
     CURRENT_USER = data.email;
     document.getElementById("email").innerText = CURRENT_USER;
     applyLoggedInUser(data);
+    hideSystemLoginBox();
     setLoading("mainStatus", "System login successful.");
   } catch (err) {
     alert(err.message || err);
     setLoading("mainStatus", "");
   } finally {
     btn.disabled = false;
-    btn.textContent = "System Login";
+    btn.textContent = "Login";
   }
 }
 
