@@ -555,6 +555,8 @@ a:hover { text-decoration:underline; }
         <div class="email-preview-sub" id="emailPreviewMeta">Review and edit the email before sending.</div>
       </div>
       <div class="email-preview-actions">
+        <button type="button" id="bulkPreviewPrevBtn" onclick="showBulkPreviewPage(-1)" style="display:none;background:#f1f5f9;color:#0f172a;box-shadow:none;">Previous</button>
+        <button type="button" id="bulkPreviewNextBtn" onclick="showBulkPreviewPage(1)" style="display:none;background:#f1f5f9;color:#0f172a;box-shadow:none;">Next</button>
         <button type="button" onclick="closeEmailPreview()" style="background:#f1f5f9;color:#0f172a;box-shadow:none;">Cancel</button>
         <button type="button" class="green-btn" id="emailPreviewSendBtn" onclick="sendPreviewedEmail()">Send Email</button>
       </div>
@@ -593,6 +595,10 @@ let ALL_AGENTS = [];
 let DISPUTES_CACHE = [];
 let CURRENT_RESOLUTION_RESPONSE = null;
 let PENDING_EMAIL_SEND = null;
+let BULK_PREVIEW_ITEMS = [];
+let BULK_PREVIEW_INDEX = 0;
+let BULK_PREVIEW_BASE_META = "";
+let BULK_PREVIEW_SUMMARY_HTML = "";
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -707,20 +713,119 @@ function openEmailPreview(title, meta, htmlBody, onSend) {
     return;
   }
 
+  BULK_PREVIEW_ITEMS = [];
+  BULK_PREVIEW_INDEX = 0;
+  BULK_PREVIEW_BASE_META = "";
+  BULK_PREVIEW_SUMMARY_HTML = "";
+  toggleBulkPreviewButtons(false);
+
   titleEl.textContent = title || "Email Preview";
   metaEl.textContent = meta || "Review and edit the email before sending.";
   statusEl.textContent = "";
   sendBtn.disabled = false;
   sendBtn.textContent = "Send Email";
   content.innerHTML = htmlBody || "";
+  content.setAttribute("contenteditable", "true");
   PENDING_EMAIL_SEND = onSend;
   popup.style.display = "flex";
+}
+
+function openBulkEmailPreview(title, meta, previewData, onSend) {
+  const popup = document.getElementById("emailPreviewPopup");
+  const titleEl = document.getElementById("emailPreviewTitle");
+  const statusEl = document.getElementById("emailPreviewStatus");
+  const sendBtn = document.getElementById("emailPreviewSendBtn");
+
+  if (!popup) {
+    alert("Email preview popup is missing.");
+    return;
+  }
+
+  BULK_PREVIEW_ITEMS = previewData.previewItems || [];
+  BULK_PREVIEW_INDEX = 0;
+  BULK_PREVIEW_BASE_META = meta || "Review bulk report emails before sending.";
+  BULK_PREVIEW_SUMMARY_HTML = buildBulkPreviewSummaryHtml(previewData);
+
+  titleEl.textContent = title || "Preview Bulk Report Email";
+  statusEl.textContent = "";
+  sendBtn.disabled = false;
+  sendBtn.textContent = "Send Email";
+  PENDING_EMAIL_SEND = onSend;
+
+  toggleBulkPreviewButtons(BULK_PREVIEW_ITEMS.length > 1);
+  renderBulkPreviewPage();
+  popup.style.display = "flex";
+}
+
+function buildBulkPreviewSummaryHtml(data) {
+  const skipped = data.skipped || [];
+  const skippedHtml = skipped.length
+    ? `<div style="font-family:Arial,sans-serif;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px;margin:0 0 18px 0;color:#9a3412;">
+         <b>Skipped agents:</b><br>${skipped.map(x => "• " + escapeHtml(x)).join("<br>")}
+       </div>`
+    : "";
+
+  return `
+    <div style="font-family:Arial,sans-serif;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:18px;">
+      <b>Bulk Email Preview</b><br>
+      Total mapped agents: ${data.totalAgents || 0}<br>
+      Valid previews: ${data.previewedAgents || (data.previewItems || []).length || 0}<br>
+      CC: ${escapeHtml(data.cc || "-")}
+    </div>
+    ${skippedHtml}`;
+}
+
+function toggleBulkPreviewButtons(show) {
+  const prevBtn = document.getElementById("bulkPreviewPrevBtn");
+  const nextBtn = document.getElementById("bulkPreviewNextBtn");
+  if (prevBtn) prevBtn.style.display = show ? "inline-flex" : "none";
+  if (nextBtn) nextBtn.style.display = show ? "inline-flex" : "none";
+}
+
+function renderBulkPreviewPage() {
+  const content = document.getElementById("emailPreviewContent");
+  const metaEl = document.getElementById("emailPreviewMeta");
+  const prevBtn = document.getElementById("bulkPreviewPrevBtn");
+  const nextBtn = document.getElementById("bulkPreviewNextBtn");
+
+  if (!content || !BULK_PREVIEW_ITEMS.length) return;
+
+  const item = BULK_PREVIEW_ITEMS[BULK_PREVIEW_INDEX];
+  const total = BULK_PREVIEW_ITEMS.length;
+
+  metaEl.textContent = `${BULK_PREVIEW_BASE_META} | Preview ${BULK_PREVIEW_INDEX + 1} of ${total} | Agent: ${item.agent || "-"}`;
+  content.innerHTML = BULK_PREVIEW_SUMMARY_HTML + `
+    <div style="font-family:Arial,sans-serif;margin:0 0 24px 0;padding:14px 14px 20px 14px;border:2px solid #dbeafe;border-radius:14px;background:#ffffff;">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#0f172a;">
+        <b>Email Preview ${BULK_PREVIEW_INDEX + 1} of ${total}:</b> ${escapeHtml(item.agent || "-")}<br>
+        <b>To:</b> ${escapeHtml(item.to || "-")}<br>
+        <b>CC:</b> ${escapeHtml(item.cc || "-")}
+      </div>
+      ${item.htmlBody || ""}
+    </div>`;
+
+  content.setAttribute("contenteditable", "true");
+  if (prevBtn) prevBtn.disabled = BULK_PREVIEW_INDEX === 0;
+  if (nextBtn) nextBtn.disabled = BULK_PREVIEW_INDEX >= total - 1;
+}
+
+function showBulkPreviewPage(direction) {
+  if (!BULK_PREVIEW_ITEMS.length) return;
+  BULK_PREVIEW_INDEX += Number(direction || 0);
+  if (BULK_PREVIEW_INDEX < 0) BULK_PREVIEW_INDEX = 0;
+  if (BULK_PREVIEW_INDEX >= BULK_PREVIEW_ITEMS.length) BULK_PREVIEW_INDEX = BULK_PREVIEW_ITEMS.length - 1;
+  renderBulkPreviewPage();
 }
 
 function closeEmailPreview() {
   const popup = document.getElementById("emailPreviewPopup");
   if (popup) popup.style.display = "none";
   PENDING_EMAIL_SEND = null;
+  BULK_PREVIEW_ITEMS = [];
+  BULK_PREVIEW_INDEX = 0;
+  BULK_PREVIEW_BASE_META = "";
+  BULK_PREVIEW_SUMMARY_HTML = "";
+  toggleBulkPreviewButtons(false);
 }
 
 async function sendPreviewedEmail() {
@@ -984,11 +1089,9 @@ async function bulkSendReports() {
     return;
   }
 
-  openEmailPreview(
-    "Preview Bulk Report Email",
-    "To: All mapped agents (" + (previewData.totalAgents || "-") + ") | CC: " + (previewData.cc || cc || "-") + " | Preview showing: " + (previewData.previewedAgents || "all valid agents") + " | Period: " + (previewData.period || from + " to " + to),
-    previewData.htmlBody,
-    async function() {
+  const bulkPreviewMeta = "To: All mapped agents (" + (previewData.totalAgents || "-") + ") | CC: " + (previewData.cc || cc || "-") + " | Period: " + (previewData.period || from + " to " + to);
+
+  const bulkSendHandler = async function() {
       setLoading("allAgentStatus", "Sending bulk reports to all agents...");
 
       const data = await apiCall({
@@ -1012,8 +1115,13 @@ async function bulkSendReports() {
       alert(msg);
       setLoading("allAgentStatus", msg);
       trackActivity("Send Bulk Report Email", "All Agents", "CC: " + (cc || "-") + " | Period: " + from + " to " + to + " | " + msg);
-    }
-  );
+    };
+
+  if (previewData.previewItems && previewData.previewItems.length) {
+    openBulkEmailPreview("Preview Bulk Report Email", bulkPreviewMeta, previewData, bulkSendHandler);
+  } else {
+    openEmailPreview("Preview Bulk Report Email", bulkPreviewMeta, previewData.htmlBody, bulkSendHandler);
+  }
 }
 
 
