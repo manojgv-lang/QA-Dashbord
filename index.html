@@ -389,6 +389,9 @@ a:hover { text-decoration:underline; }
       <button class="nav-item" id="navCsat" onclick="showDashboardView('csat')">
         <span class="nav-left"><span class="nav-icon">☑</span><span class="nav-label">CSAT Report</span></span><span class="nav-arrow">›</span>
       </button>
+      <button class="nav-item" id="navIncentive" onclick="showDashboardView('incentive')">
+        <span class="nav-left"><span class="nav-icon">₹</span><span class="nav-label">Incentive Eligibility</span></span><span class="nav-arrow">›</span>
+      </button>
 
       <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
         <span class="nav-left"><span class="nav-icon">✦</span><span class="nav-label">Weekly Audit Summary</span></span><span class="nav-arrow">›</span>
@@ -576,6 +579,33 @@ a:hover { text-decoration:underline; }
         <div id="csatResults" style="display:none;"></div>
       </div>
 
+
+      <div id="viewIncentive" style="display:none;">
+        <div class="unified-hero">
+          <small style="font-weight:900;color:#bfdbfe;">INCENTIVE PLAN</small>
+          <h2>Incentive Eligibility</h2>
+          <p>Select a month to check agent-wise incentive eligibility based on productivity, CSAT, QA audit score, and the approved parameter matrix.</p>
+        </div>
+
+        <div class="card">
+          <h2>Incentive Eligibility Filters</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Month-wise eligibility only. No date range selection required.</p>
+          <div class="grid-2">
+            <div>
+              <label>Select Month</label>
+              <input type="month" id="incentiveMonth">
+            </div>
+            <div>
+              <label>Report Type</label>
+              <input type="text" value="Monthly Incentive Eligibility" disabled>
+            </div>
+          </div>
+          <button id="incentiveBtn" onclick="loadIncentiveEligibility()">Generate Incentive Eligibility</button>
+          <p id="incentiveStatus" class="loading"></p>
+        </div>
+
+        <div id="incentiveResults" style="display:none;"></div>
+      </div>
 
       <div id="viewWeekly" style="display:none;">
         <div class="card">
@@ -2112,11 +2142,11 @@ async function submitNotSatisfiedResponse() {
 
 
 function setActiveNav(name) {
-  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "productivity" ? "navProductivity" : name === "csat" ? "navCsat" : name === "weekly" ? "navWeekly" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "productivity" ? "navProductivity" : name === "csat" ? "navCsat" : name === "incentive" ? "navIncentive" : name === "weekly" ? "navWeekly" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -2168,6 +2198,7 @@ function showDashboardView(name) {
   const aiInsight = document.getElementById("viewAiInsight");
   const productivity = document.getElementById("viewProductivity");
   const csat = document.getElementById("viewCsat");
+  const incentive = document.getElementById("viewIncentive");
   const weekly = document.getElementById("viewWeekly");
 
   if (agent) agent.style.display = "none";
@@ -2177,9 +2208,10 @@ function showDashboardView(name) {
   if (aiInsight) aiInsight.style.display = "none";
   if (productivity) productivity.style.display = "none";
   if (csat) csat.style.display = "none";
+  if (incentive) incentive.style.display = "none";
   if (weekly) weekly.style.display = "none";
 
-  if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "productivity" || name === "csat") && !isAdminLikeRole(CURRENT_ROLE)) {
+  if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "productivity" || name === "csat" || name === "incentive") && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
     setActiveNav("all");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2193,6 +2225,7 @@ function showDashboardView(name) {
   if (aiInsight) aiInsight.style.display = name === "aiInsight" ? "block" : "none";
   if (productivity) productivity.style.display = name === "productivity" ? "block" : "none";
   if (csat) csat.style.display = name === "csat" ? "block" : "none";
+  if (incentive) incentive.style.display = name === "incentive" ? "block" : "none";
   if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
 
   if (name === "charts") {
@@ -2231,6 +2264,14 @@ function showDashboardView(name) {
     const csatTo = document.getElementById("csatToDate");
     if (csatFrom && document.getElementById("fromDate")) csatFrom.value = document.getElementById("fromDate").value || csatFrom.value;
     if (csatTo && document.getElementById("toDate")) csatTo.value = document.getElementById("toDate").value || csatTo.value;
+  }
+
+  if (name === "incentive") {
+    const incMonth = document.getElementById("incentiveMonth");
+    if (incMonth && !incMonth.value) {
+      const now = new Date();
+      incMonth.value = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    }
   }
 
   if (name === "weekly") {
@@ -3157,11 +3198,128 @@ function emailCellStyle(header, value) {
   return "";
 }
 
+
+async function loadIncentiveEligibility() {
+  const month = document.getElementById("incentiveMonth").value;
+  const btn = document.getElementById("incentiveBtn");
+
+  if (!month) {
+    alert("Please select month.");
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+    setLoading("incentiveStatus", "Fetching incentive eligibility...");
+
+    const data = await apiCall({
+      action: "getIncentiveEligibility",
+      email: CURRENT_USER,
+      month: month
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("incentiveStatus", "");
+      return;
+    }
+
+    renderIncentiveEligibility(data);
+    setLoading("incentiveStatus", "Incentive eligibility loaded successfully.");
+    trackActivity("Generate Incentive Eligibility", "All Agents", "Month: " + data.monthLabel);
+  } catch (err) {
+    alert(err.message || err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate Incentive Eligibility";
+  }
+}
+
+function renderIncentiveEligibility(data) {
+  const div = document.getElementById("incentiveResults");
+  div.style.display = "block";
+
+  const rows = data.rows || [];
+  const summary = data.summary || {};
+
+  div.innerHTML = `
+    <div class="unified-kpi-grid">
+      <div class="unified-kpi"><div class="label">Month</div><div class="value" style="font-size:22px;">${escapeHtml(data.monthLabel || "-")}</div><div class="sub">Selected incentive month</div></div>
+      <div class="unified-kpi"><div class="label">Eligible Agents</div><div class="value">${summary.eligible || 0}</div><div class="sub">Overall score 85%+</div></div>
+      <div class="unified-kpi"><div class="label">₹7000 Slab</div><div class="value">${summary.slab7000 || 0}</div><div class="sub">Overall > 95%</div></div>
+      <div class="unified-kpi"><div class="label">₹5000 Slab</div><div class="value">${summary.slab5000 || 0}</div><div class="sub">90% - 95%</div></div>
+      <div class="unified-kpi"><div class="label">₹3000 Slab</div><div class="value">${summary.slab3000 || 0}</div><div class="sub">85% - 89%</div></div>
+    </div>
+
+    <div class="unified-card" style="margin-bottom:18px;">
+      <h2>Agent-wise Incentive Eligibility</h2>
+      <p style="margin-top:-8px;color:#64748b;"><b>Period:</b> ${escapeHtml(data.period || "")}</p>
+      <table class="unified-table">
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Connected Calls</th>
+            <th>Connected Points</th>
+            <th>Talktime</th>
+            <th>Talktime Points</th>
+            <th>AHT</th>
+            <th>AHT Points</th>
+            <th>AWD</th>
+            <th>AWD Points</th>
+            <th>Audit Score</th>
+            <th>Audit Points</th>
+            <th>Missed Calls</th>
+            <th>Missed Points</th>
+            <th>Overall</th>
+            <th>Eligibility</th>
+            <th>Slab</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><b>${escapeHtml(r.agent)}</b></td>
+              <td>${escapeHtml(r.connectedCalls)}</td>
+              <td class="${incentivePointClass(r.connectedPoints)}">${r.connectedPoints}%</td>
+              <td>${escapeHtml(r.talktime)}</td>
+              <td class="${incentivePointClass(r.talktimePoints)}">${r.talktimePoints}%</td>
+              <td>${escapeHtml(r.aht)}</td>
+              <td class="${incentivePointClass(r.ahtPoints)}">${r.ahtPoints}%</td>
+              <td>${escapeHtml(r.awd)}</td>
+              <td class="${incentivePointClass(r.awdPoints)}">${r.awdPoints}%</td>
+              <td>${r.auditScore}%</td>
+              <td class="${incentivePointClass(r.auditPoints)}">${r.auditPoints}%</td>
+              <td>${escapeHtml(r.missedCalls)}</td>
+              <td class="${incentivePointClass(r.missedPoints)}">${r.missedPoints}%</td>
+              <td class="${incentivePointClass(r.overallScore)}"><b>${r.overallScore}%</b></td>
+              <td><span class="performance-badge ${r.eligible ? 'green' : 'red'}">${escapeHtml(r.eligibility)}</span></td>
+              <td><b>${escapeHtml(r.slab)}</b></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="unified-card">
+      <h2>Parameter Matrix Used</h2>
+      <p style="color:#64748b;line-height:1.6;margin-top:-8px;">This calculation follows the parameter matrix shared in the Productivity Workbook. Overall score slab: >95% = ₹7000, 90%-95% = ₹5000, 85%-89% = ₹3000, 85% = Qualifier.</p>
+    </div>
+  `;
+}
+
+function incentivePointClass(value) {
+  const n = Number(value || 0);
+  if (n >= 90) return "metric-good";
+  if (n >= 75) return "metric-warn";
+  return "metric-bad";
+}
+
 function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
   if (restricted) restricted.style.display = "none";
   showDashboardView("none");
-  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
