@@ -345,6 +345,13 @@ a:hover { text-decoration:underline; }
 @media(max-width:1100px){ .unified-kpi-grid,.unified-grid{grid-template-columns:1fr;} }
 
 @media(max-width: 980px){ .app-shell{display:block;} .sidebar{position:relative;width:100%;height:auto;min-width:0;} .main{width:100%;} .quick-grid{grid-template-columns:1fr 1fr;} .top-header{position:relative;flex-direction:column;align-items:flex-start;} .content{padding:18px;} .grid-2{grid-template-columns:1fr;} .category-detail-box{grid-template-columns:1fr;} table{display:block;overflow-x:auto;} }
+
+.metric-good { background:#dcfce7 !important; color:#166534 !important; font-weight:900; }
+.metric-warn { background:#fef3c7 !important; color:#92400e !important; font-weight:900; }
+.metric-bad { background:#fee2e2 !important; color:#991b1b !important; font-weight:900; }
+.email-action-row { display:grid; grid-template-columns:1fr 1fr auto auto; gap:14px; align-items:end; margin-top:14px; }
+@media(max-width: 900px){ .email-action-row{grid-template-columns:1fr;} }
+
 </style>
 </head>
 
@@ -528,6 +535,15 @@ a:hover { text-decoration:underline; }
             <div><label>To Date</label><input type="date" id="productivityToDate"></div>
           </div>
           <button id="productivityBtn" onclick="loadDailyProductivity()">Generate Productivity Report</button>
+          <button class="coming-soon-btn" onclick="setYesterdayProductivity()">Yesterday Report</button>
+
+          <div class="email-action-row">
+            <div><label>To Email ID(s)</label><input type="text" id="productivityEmailTo" value="ce@voltmoney.in" placeholder="example@voltmoney.in"></div>
+            <div><label>CC Email ID(s)</label><input type="text" id="productivityEmailCc" value="vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in" placeholder="cc@voltmoney.in"></div>
+            <button class="green-btn" onclick="sendProductivityEmail(false)">Send Selected Report</button>
+            <button class="green-btn" onclick="sendProductivityEmail(true)">Send Yesterday Email</button>
+          </div>
+
           <p id="productivityStatus" class="loading"></p>
         </div>
         <div id="productivityResults" style="display:none;"></div>
@@ -546,6 +562,15 @@ a:hover { text-decoration:underline; }
             <div><label>To Date</label><input type="date" id="csatToDate"></div>
           </div>
           <button id="csatBtn" onclick="loadCsatReport()">Generate CSAT Report</button>
+          <button class="coming-soon-btn" onclick="setYesterdayCsat()">Yesterday Report</button>
+
+          <div class="email-action-row">
+            <div><label>To Email ID(s)</label><input type="text" id="csatEmailTo" value="ce@voltmoney.in" placeholder="example@voltmoney.in"></div>
+            <div><label>CC Email ID(s)</label><input type="text" id="csatEmailCc" value="vivek.nair@voltmoney.in, ranjithkumar.g@voltmoney.in" placeholder="cc@voltmoney.in"></div>
+            <button class="green-btn" onclick="sendCsatEmail(false)">Send Selected Report</button>
+            <button class="green-btn" onclick="sendCsatEmail(true)">Send Yesterday Email</button>
+          </div>
+
           <p id="csatStatus" class="loading"></p>
         </div>
         <div id="csatResults" style="display:none;"></div>
@@ -666,6 +691,8 @@ let BULK_PREVIEW_ITEMS = [];
 let BULK_PREVIEW_INDEX = 0;
 let BULK_PREVIEW_BASE_META = "";
 let BULK_PREVIEW_SUMMARY_HTML = "";
+let CURRENT_PRODUCTIVITY_REPORT = null;
+let CURRENT_CSAT_REPORT = null;
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -2729,6 +2756,7 @@ async function loadDailyProductivity() {
       return;
     }
 
+    CURRENT_PRODUCTIVITY_REPORT = data;
     renderDailyProductivity(data);
     setLoading("productivityStatus", "Productivity report loaded successfully.");
     trackActivity("Generate Daily Productivity", "All Agents", "Period: " + data.period);
@@ -2798,6 +2826,7 @@ async function loadCsatReport() {
       return;
     }
 
+    CURRENT_CSAT_REPORT = data;
     renderCsatReport(data);
     setLoading("csatStatus", "CSAT report loaded successfully.");
     trackActivity("Generate CSAT Report", "All Agents", "Period: " + data.period);
@@ -2855,11 +2884,56 @@ function renderSimpleDataTable(headers, rows) {
       </thead>
       <tbody>
         ${rows.map(row => `
-          <tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>
+          <tr>${headers.map((h, i) => `<td class="${getMetricCellClass(h, row[i])}">${escapeHtml(row[i])}</td>`).join("")}</tr>
         `).join("")}
       </tbody>
     </table>
   `;
+}
+
+function getMetricCellClass(header, value) {
+  const h = String(header || "").toLowerCase();
+  const text = String(value || "").replace("%", "").trim();
+  const n = parseFloat(text);
+  if (isNaN(n)) return "";
+
+  if (h.includes("csat score")) {
+    if (n >= 85) return "metric-good";
+    if (n >= 75) return "metric-warn";
+    return "metric-bad";
+  }
+
+  if (h.includes("fill rate %")) {
+    if (n >= 20) return "metric-good";
+    if (n >= 10) return "metric-warn";
+    return "metric-bad";
+  }
+
+  if (h.includes("missed")) {
+    if (n <= 5) return "metric-good";
+    if (n <= 8) return "metric-warn";
+    return "metric-bad";
+  }
+
+  if (h.includes("aht")) {
+    if (n <= 3) return "metric-good";
+    if (n <= 4) return "metric-warn";
+    return "metric-bad";
+  }
+
+  if (h.includes("more than 5")) {
+    if (n <= 20) return "metric-good";
+    if (n <= 30) return "metric-warn";
+    return "metric-bad";
+  }
+
+  if (h.includes("less than 1")) {
+    if (n <= 10) return "metric-good";
+    if (n <= 20) return "metric-warn";
+    return "metric-bad";
+  }
+
+  return "";
 }
 
 function unifiedStatusClass(status) {
@@ -2870,6 +2944,218 @@ function unifiedStatusClass(status) {
   return "blue";
 }
 
+
+
+function toIsoLocalDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getYesterdayIsoDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toIsoLocalDate(d);
+}
+
+function setYesterdayProductivity() {
+  const y = getYesterdayIsoDate();
+  document.getElementById("productivityFromDate").value = y;
+  document.getElementById("productivityToDate").value = y;
+  loadDailyProductivity();
+}
+
+function setYesterdayCsat() {
+  const y = getYesterdayIsoDate();
+  document.getElementById("csatFromDate").value = y;
+  document.getElementById("csatToDate").value = y;
+  loadCsatReport();
+}
+
+async function sendProductivityEmail(useYesterday) {
+  let from = document.getElementById("productivityFromDate").value;
+  let to = document.getElementById("productivityToDate").value;
+  const toEmail = document.getElementById("productivityEmailTo").value.trim();
+  const ccEmail = document.getElementById("productivityEmailCc").value.trim();
+
+  if (useYesterday) {
+    const y = getYesterdayIsoDate();
+    from = y;
+    to = y;
+    document.getElementById("productivityFromDate").value = y;
+    document.getElementById("productivityToDate").value = y;
+  }
+
+  if (!toEmail) { alert("Please enter To email ID."); return; }
+  if (!from || !to) { alert("Please select From Date and To Date."); return; }
+
+  setLoading("productivityStatus", "Preparing productivity email preview...");
+
+  const data = await apiCall({
+    action: "getDailyProductivityReport",
+    email: CURRENT_USER,
+    from: from,
+    to: to
+  });
+
+  if (!data.ok) {
+    alert(data.error);
+    setLoading("productivityStatus", "");
+    return;
+  }
+
+  CURRENT_PRODUCTIVITY_REPORT = data;
+  renderDailyProductivity(data);
+
+  const htmlBody = buildProductivityEmailHtml(data);
+
+  openEmailPreview(
+    "Preview Productivity Report Email",
+    "To: " + toEmail + " | CC: " + (ccEmail || "-") + " | Period: " + (data.period || ""),
+    htmlBody,
+    async function(editedHtml) {
+      setLoading("productivityStatus", "Sending productivity report email...");
+      const sendData = await apiCall({
+        action: "sendProductivityReportEmail",
+        email: CURRENT_USER,
+        to: toEmail,
+        cc: ccEmail,
+        period: data.period,
+        htmlBody: editedHtml
+      });
+      if (!sendData.ok) {
+        setLoading("productivityStatus", "");
+        throw new Error(sendData.error || "Productivity email failed");
+      }
+      setLoading("productivityStatus", sendData.message || "Productivity email sent successfully.");
+      trackActivity("Send Productivity Report Email", "All Agents", "Period: " + data.period + " | To: " + toEmail);
+    }
+  );
+}
+
+async function sendCsatEmail(useYesterday) {
+  let from = document.getElementById("csatFromDate").value;
+  let to = document.getElementById("csatToDate").value;
+  const toEmail = document.getElementById("csatEmailTo").value.trim();
+  const ccEmail = document.getElementById("csatEmailCc").value.trim();
+
+  if (useYesterday) {
+    const y = getYesterdayIsoDate();
+    from = y;
+    to = y;
+    document.getElementById("csatFromDate").value = y;
+    document.getElementById("csatToDate").value = y;
+  }
+
+  if (!toEmail) { alert("Please enter To email ID."); return; }
+  if (!from || !to) { alert("Please select From Date and To Date."); return; }
+
+  setLoading("csatStatus", "Preparing CSAT email preview...");
+
+  const data = await apiCall({
+    action: "getCsatProductivityReport",
+    email: CURRENT_USER,
+    from: from,
+    to: to
+  });
+
+  if (!data.ok) {
+    alert(data.error);
+    setLoading("csatStatus", "");
+    return;
+  }
+
+  CURRENT_CSAT_REPORT = data;
+  renderCsatReport(data);
+
+  const htmlBody = buildCsatEmailHtml(data);
+
+  openEmailPreview(
+    "Preview CSAT Report Email",
+    "To: " + toEmail + " | CC: " + (ccEmail || "-") + " | Period: " + (data.period || ""),
+    htmlBody,
+    async function(editedHtml) {
+      setLoading("csatStatus", "Sending CSAT report email...");
+      const sendData = await apiCall({
+        action: "sendCsatReportEmail",
+        email: CURRENT_USER,
+        to: toEmail,
+        cc: ccEmail,
+        period: data.period,
+        htmlBody: editedHtml
+      });
+      if (!sendData.ok) {
+        setLoading("csatStatus", "");
+        throw new Error(sendData.error || "CSAT email failed");
+      }
+      setLoading("csatStatus", sendData.message || "CSAT email sent successfully.");
+      trackActivity("Send CSAT Report Email", "All Agents", "Period: " + data.period + " | To: " + toEmail);
+    }
+  );
+}
+
+function buildProductivityEmailHtml(data) {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5;">
+      <p>Hi Team,</p>
+      <p>PFB the Productivity Report for <b>${escapeHtml(data.period || "")}</b>.</p>
+      ${(data.sections || []).map(section => `
+        <p style="background:#dbeafe;display:inline-block;font-weight:bold;margin:18px 0 8px 0;padding:4px 8px;">${escapeHtml(section.title || "Productivity Report")}</p>
+        ${renderEmailTable(section.headers || [], section.rows || [])}
+      `).join("")}
+      <p style="margin-top:22px;">Regards,<br>QA Team</p>
+    </div>
+  `;
+}
+
+function buildCsatEmailHtml(data) {
+  const rows = data.agentRows || [];
+  const dailyRows = data.dailyRows || [];
+  const o = data.overall || {};
+  return `
+    <div style="font-family:Arial,sans-serif;color:#111;font-size:13px;line-height:1.5;">
+      <p>Hi Team,</p>
+      <p>PFB the CSAT Report for <b>${escapeHtml(data.period || "")}</b>.</p>
+      <p><b>Connected:</b> ${o.connected || 0} | <b>Missed:</b> ${o.missed || 0} | <b>Fill Rate:</b> ${o.fillRate || 0}% | <b>CSAT:</b> ${o.csatScore || 0}% | <b>Responses:</b> ${o.responses || 0}</p>
+      <p style="background:#dbeafe;display:inline-block;font-weight:bold;margin:18px 0 8px 0;padding:4px 8px;">CSAT Agent Summary</p>
+      ${renderEmailTable(
+        ["Team Member","Connected","Missed","Fill rate (from connected)","Fill rate %","1 (Satisfied)","2 (Neutral)","3 (Dissatisfied)","CSAT Score"],
+        rows.map(r => [r.agent, r.connected, r.missed, r.fillCount, r.fillRate + "%", r.satisfied, r.neutral, r.dissatisfied, r.csatScore + "%"])
+      )}
+      <p style="background:#dbeafe;display:inline-block;font-weight:bold;margin:18px 0 8px 0;padding:4px 8px;">Daily CSAT Report</p>
+      ${renderEmailTable(
+        ["Date","Connected","Missed","Fill rate (from connected)","Fill rate %","1 (Satisfied)","2 (Neutral)","3 (Dissatisfied)","CSAT Score"],
+        dailyRows.map(r => [r.date, r.connected, r.missed, r.fillCount, r.fillRate + "%", r.satisfied, r.neutral, r.dissatisfied, r.csatScore + "%"])
+      )}
+      <p style="margin-top:22px;">Regards,<br>QA Team</p>
+    </div>
+  `;
+}
+
+function renderEmailTable(headers, rows) {
+  if (!rows || !rows.length) return `<p>No data found.</p>`;
+  return `
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:12px;">
+      <tr style="background:#b7e1cd;font-weight:bold;text-align:center;">
+        ${headers.map(h => `<td style="border:1px solid #000;padding:7px;">${escapeHtml(h)}</td>`).join("")}
+      </tr>
+      ${rows.map(row => `
+        <tr>
+          ${headers.map((h, i) => `<td style="border:1px solid #000;padding:7px;${emailCellStyle(h, row[i])}">${escapeHtml(row[i])}</td>`).join("")}
+        </tr>
+      `).join("")}
+    </table>
+  `;
+}
+
+function emailCellStyle(header, value) {
+  const cls = getMetricCellClass(header, value);
+  if (cls === "metric-good") return "background:#dcfce7;color:#166534;font-weight:bold;";
+  if (cls === "metric-warn") return "background:#fef3c7;color:#92400e;font-weight:bold;";
+  if (cls === "metric-bad") return "background:#fee2e2;color:#991b1b;font-weight:bold;";
+  return "";
+}
 
 function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
