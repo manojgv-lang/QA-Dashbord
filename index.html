@@ -521,9 +521,13 @@ a:hover { text-decoration:underline; }
           <p>Reads only the separate Agent Productivity Workbook. QA reports and existing features remain unchanged.</p>
         </div>
         <div class="card">
-          <h2>Productivity Report</h2>
-          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Shows Daily, Weekly, and Monthly productivity tables from the separate workbook.</p>
-          <button id="productivityBtn" onclick="loadDailyProductivity()">Refresh Productivity</button>
+          <h2>Productivity Report Filters</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Select a date range to view Daily, Weekly, and Monthly productivity from the separate workbook.</p>
+          <div class="grid-2">
+            <div><label>From Date</label><input type="date" id="productivityFromDate"></div>
+            <div><label>To Date</label><input type="date" id="productivityToDate"></div>
+          </div>
+          <button id="productivityBtn" onclick="loadDailyProductivity()">Generate Productivity Report</button>
           <p id="productivityStatus" class="loading"></p>
         </div>
         <div id="productivityResults" style="display:none;"></div>
@@ -2189,7 +2193,10 @@ function showDashboardView(name) {
   }
 
   if (name === "productivity") {
-    loadDailyProductivity();
+    const prodFrom = document.getElementById("productivityFromDate");
+    const prodTo = document.getElementById("productivityToDate");
+    if (prodFrom && document.getElementById("fromDate")) prodFrom.value = document.getElementById("fromDate").value || prodFrom.value;
+    if (prodTo && document.getElementById("toDate")) prodTo.value = document.getElementById("toDate").value || prodTo.value;
   }
 
   if (name === "csat") {
@@ -2692,19 +2699,28 @@ async function sendWeeklyAuditSummaryEmail() {
 
 
 async function loadDailyProductivity() {
+  const from = document.getElementById("productivityFromDate").value;
+  const to = document.getElementById("productivityToDate").value;
   const btn = document.getElementById("productivityBtn");
+
+  if (!from || !to) {
+    alert("Please select From Date and To Date.");
+    return;
+  }
 
   try {
     if (btn) {
       btn.disabled = true;
-      btn.textContent = "Loading...";
+      btn.textContent = "Generating...";
     }
 
     setLoading("productivityStatus", "Fetching productivity data from separate workbook...");
 
     const data = await apiCall({
       action: "getDailyProductivityReport",
-      email: CURRENT_USER
+      email: CURRENT_USER,
+      from: from,
+      to: to
     });
 
     if (!data.ok) {
@@ -2715,13 +2731,13 @@ async function loadDailyProductivity() {
 
     renderDailyProductivity(data);
     setLoading("productivityStatus", "Productivity report loaded successfully.");
-    trackActivity("View Daily Productivity", "All Agents", "Separate productivity workbook");
+    trackActivity("Generate Daily Productivity", "All Agents", "Period: " + data.period);
   } catch (err) {
     alert(err.message || err);
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "Refresh Productivity";
+      btn.textContent = "Generate Productivity Report";
     }
   }
 }
@@ -2733,15 +2749,15 @@ function renderDailyProductivity(data) {
   const sections = data.sections || [];
 
   if (!sections.length) {
-    div.innerHTML = `<div class="card"><h2>Daily Productivity</h2><p>No productivity data found.</p></div>`;
+    div.innerHTML = `<div class="card"><h2>Daily Productivity</h2><p>No productivity data found for selected date range.</p></div>`;
     return;
   }
 
   div.innerHTML = `
-    <div class="unified-kpi-grid">
-      <div class="unified-kpi"><div class="label">Source</div><div class="value" style="font-size:20px;">Productivity</div><div class="sub">Separate workbook</div></div>
-      <div class="unified-kpi"><div class="label">Sections</div><div class="value">${sections.length}</div><div class="sub">Daily / Weekly / Monthly</div></div>
-      <div class="unified-kpi"><div class="label">Last Updated</div><div class="value" style="font-size:20px;">${escapeHtml(data.generatedAt || "-")}</div><div class="sub">Refresh time</div></div>
+    <div class="unified-card" style="margin-bottom:18px;">
+      <h2>Productivity Report</h2>
+      <p style="margin:0;color:#64748b;"><b>Period:</b> ${escapeHtml(data.period || "")}</p>
+      <p style="margin:8px 0 0;color:#64748b;">This is pulled only from the separate Agent Productivity Workbook. QA data is not combined here.</p>
     </div>
 
     ${sections.map(section => `
