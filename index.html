@@ -376,8 +376,11 @@ a:hover { text-decoration:underline; }
         <span class="nav-left"><span class="nav-icon">✧</span><span class="nav-label">AI Insight</span></span><span class="nav-arrow">›</span>
       </button>
 
-      <button class="nav-item" id="navUnified" onclick="showDashboardView('unified')">
-        <span class="nav-left"><span class="nav-icon">◆</span><span class="nav-label">Unified Performance</span></span><span class="nav-arrow">›</span>
+      <button class="nav-item" id="navProductivity" onclick="showDashboardView('productivity')">
+        <span class="nav-left"><span class="nav-icon">◫</span><span class="nav-label">Daily Productivity</span></span><span class="nav-arrow">›</span>
+      </button>
+      <button class="nav-item" id="navCsat" onclick="showDashboardView('csat')">
+        <span class="nav-left"><span class="nav-icon">☑</span><span class="nav-label">CSAT Report</span></span><span class="nav-arrow">›</span>
       </button>
 
       <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
@@ -511,22 +514,37 @@ a:hover { text-decoration:underline; }
       </div>
 
 
-      <div id="viewUnified" style="display:none;">
+      <div id="viewProductivity" style="display:none;">
         <div class="unified-hero">
-          <small style="font-weight:900;color:#bfdbfe;">QA + CSAT + PRODUCTIVITY</small>
-          <h2>Unified Agent Performance</h2>
-          <p>Combines current QA audit score with the separate Agent Productivity Workbook CSAT data. Existing QA features remain unchanged.</p>
+          <small style="font-weight:900;color:#bfdbfe;">PRODUCTIVITY WORKBOOK</small>
+          <h2>Daily Productivity</h2>
+          <p>Reads only the separate Agent Productivity Workbook. QA reports and existing features remain unchanged.</p>
         </div>
         <div class="card">
-          <h2>Unified Performance Filters</h2>
-          <div class="grid-2">
-            <div><label>From Date</label><input type="date" id="unifiedFromDate"></div>
-            <div><label>To Date</label><input type="date" id="unifiedToDate"></div>
-          </div>
-          <button id="unifiedBtn" onclick="loadUnifiedPerformance()">Generate Unified Performance</button>
-          <p id="unifiedStatus" class="loading"></p>
+          <h2>Productivity Report</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Shows Daily, Weekly, and Monthly productivity tables from the separate workbook.</p>
+          <button id="productivityBtn" onclick="loadDailyProductivity()">Refresh Productivity</button>
+          <p id="productivityStatus" class="loading"></p>
         </div>
-        <div id="unifiedResults" style="display:none;"></div>
+        <div id="productivityResults" style="display:none;"></div>
+      </div>
+
+      <div id="viewCsat" style="display:none;">
+        <div class="unified-hero">
+          <small style="font-weight:900;color:#bfdbfe;">CSAT WORKBOOK</small>
+          <h2>CSAT Report</h2>
+          <p>Reads only CSAT data from the separate Agent Productivity Workbook. This is not combined with QA score.</p>
+        </div>
+        <div class="card">
+          <h2>CSAT Report Filters</h2>
+          <div class="grid-2">
+            <div><label>From Date</label><input type="date" id="csatFromDate"></div>
+            <div><label>To Date</label><input type="date" id="csatToDate"></div>
+          </div>
+          <button id="csatBtn" onclick="loadCsatReport()">Generate CSAT Report</button>
+          <p id="csatStatus" class="loading"></p>
+        </div>
+        <div id="csatResults" style="display:none;"></div>
       </div>
 
 
@@ -2063,11 +2081,11 @@ async function submitNotSatisfiedResponse() {
 
 
 function setActiveNav(name) {
-  ["navAgent","navAll","navCharts","navAiInsight","navUnified","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "unified" ? "navUnified" : name === "weekly" ? "navWeekly" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "productivity" ? "navProductivity" : name === "csat" ? "navCsat" : name === "weekly" ? "navWeekly" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -2117,7 +2135,8 @@ function showDashboardView(name) {
   const disputes = document.getElementById("viewDisputes");
   const charts = document.getElementById("viewCharts");
   const aiInsight = document.getElementById("viewAiInsight");
-  const unified = document.getElementById("viewUnified");
+  const productivity = document.getElementById("viewProductivity");
+  const csat = document.getElementById("viewCsat");
   const weekly = document.getElementById("viewWeekly");
 
   if (agent) agent.style.display = "none";
@@ -2125,10 +2144,11 @@ function showDashboardView(name) {
   if (disputes) disputes.style.display = "none";
   if (charts) charts.style.display = "none";
   if (aiInsight) aiInsight.style.display = "none";
-  if (unified) unified.style.display = "none";
+  if (productivity) productivity.style.display = "none";
+  if (csat) csat.style.display = "none";
   if (weekly) weekly.style.display = "none";
 
-  if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "unified") && !isAdminLikeRole(CURRENT_ROLE)) {
+  if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "productivity" || name === "csat") && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
     setActiveNav("all");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2140,7 +2160,8 @@ function showDashboardView(name) {
   if (disputes) disputes.style.display = name === "disputes" ? "block" : "none";
   if (charts) charts.style.display = name === "charts" ? "block" : "none";
   if (aiInsight) aiInsight.style.display = name === "aiInsight" ? "block" : "none";
-  if (unified) unified.style.display = name === "unified" ? "block" : "none";
+  if (productivity) productivity.style.display = name === "productivity" ? "block" : "none";
+  if (csat) csat.style.display = name === "csat" ? "block" : "none";
   if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
 
   if (name === "charts") {
@@ -2165,6 +2186,17 @@ function showDashboardView(name) {
     const unifiedTo = document.getElementById("unifiedToDate");
     if (unifiedFrom && document.getElementById("fromDate")) unifiedFrom.value = document.getElementById("fromDate").value || unifiedFrom.value;
     if (unifiedTo && document.getElementById("toDate")) unifiedTo.value = document.getElementById("toDate").value || unifiedTo.value;
+  }
+
+  if (name === "productivity") {
+    loadDailyProductivity();
+  }
+
+  if (name === "csat") {
+    const csatFrom = document.getElementById("csatFromDate");
+    const csatTo = document.getElementById("csatToDate");
+    if (csatFrom && document.getElementById("fromDate")) csatFrom.value = document.getElementById("fromDate").value || csatFrom.value;
+    if (csatTo && document.getElementById("toDate")) csatTo.value = document.getElementById("toDate").value || csatTo.value;
   }
 
   if (name === "weekly") {
@@ -2658,10 +2690,74 @@ async function sendWeeklyAuditSummaryEmail() {
 }
 
 
-async function loadUnifiedPerformance() {
-  const from = document.getElementById("unifiedFromDate").value;
-  const to = document.getElementById("unifiedToDate").value;
-  const btn = document.getElementById("unifiedBtn");
+
+async function loadDailyProductivity() {
+  const btn = document.getElementById("productivityBtn");
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Loading...";
+    }
+
+    setLoading("productivityStatus", "Fetching productivity data from separate workbook...");
+
+    const data = await apiCall({
+      action: "getDailyProductivityReport",
+      email: CURRENT_USER
+    });
+
+    if (!data.ok) {
+      alert(data.error);
+      setLoading("productivityStatus", "");
+      return;
+    }
+
+    renderDailyProductivity(data);
+    setLoading("productivityStatus", "Productivity report loaded successfully.");
+    trackActivity("View Daily Productivity", "All Agents", "Separate productivity workbook");
+  } catch (err) {
+    alert(err.message || err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Refresh Productivity";
+    }
+  }
+}
+
+function renderDailyProductivity(data) {
+  const div = document.getElementById("productivityResults");
+  div.style.display = "block";
+
+  const sections = data.sections || [];
+
+  if (!sections.length) {
+    div.innerHTML = `<div class="card"><h2>Daily Productivity</h2><p>No productivity data found.</p></div>`;
+    return;
+  }
+
+  div.innerHTML = `
+    <div class="unified-kpi-grid">
+      <div class="unified-kpi"><div class="label">Source</div><div class="value" style="font-size:20px;">Productivity</div><div class="sub">Separate workbook</div></div>
+      <div class="unified-kpi"><div class="label">Sections</div><div class="value">${sections.length}</div><div class="sub">Daily / Weekly / Monthly</div></div>
+      <div class="unified-kpi"><div class="label">Last Updated</div><div class="value" style="font-size:20px;">${escapeHtml(data.generatedAt || "-")}</div><div class="sub">Refresh time</div></div>
+    </div>
+
+    ${sections.map(section => `
+      <div class="unified-card" style="margin-bottom:18px;">
+        <h2>${escapeHtml(section.title || "Productivity Report")}</h2>
+        ${section.period ? `<p style="margin-top:-8px;color:#64748b;"><b>Period:</b> ${escapeHtml(section.period)}</p>` : ""}
+        ${renderSimpleDataTable(section.headers || [], section.rows || [])}
+      </div>
+    `).join("")}
+  `;
+}
+
+async function loadCsatReport() {
+  const from = document.getElementById("csatFromDate").value;
+  const to = document.getElementById("csatToDate").value;
+  const btn = document.getElementById("csatBtn");
 
   if (!from || !to) {
     alert("Please select From Date and To Date.");
@@ -2671,10 +2767,10 @@ async function loadUnifiedPerformance() {
   try {
     btn.disabled = true;
     btn.textContent = "Generating...";
-    setLoading("unifiedStatus", "Fetching QA + CSAT productivity data from separate workbook...");
+    setLoading("csatStatus", "Fetching CSAT data from separate workbook...");
 
     const data = await apiCall({
-      action: "getUnifiedPerformance",
+      action: "getCsatProductivityReport",
       email: CURRENT_USER,
       from: from,
       to: to
@@ -2682,82 +2778,71 @@ async function loadUnifiedPerformance() {
 
     if (!data.ok) {
       alert(data.error);
-      setLoading("unifiedStatus", "");
+      setLoading("csatStatus", "");
       return;
     }
 
-    renderUnifiedPerformance(data);
-    setLoading("unifiedStatus", "Unified performance loaded successfully.");
-    trackActivity("Generate Unified Performance", "All Agents", "Period: " + data.period);
+    renderCsatReport(data);
+    setLoading("csatStatus", "CSAT report loaded successfully.");
+    trackActivity("Generate CSAT Report", "All Agents", "Period: " + data.period);
   } catch (err) {
     alert(err.message || err);
   } finally {
     btn.disabled = false;
-    btn.textContent = "Generate Unified Performance";
+    btn.textContent = "Generate CSAT Report";
   }
 }
 
-function renderUnifiedPerformance(data) {
-  const div = document.getElementById("unifiedResults");
+function renderCsatReport(data) {
+  const div = document.getElementById("csatResults");
   div.style.display = "block";
 
-  const rows = data.rows || [];
+  const rows = data.agentRows || [];
+  const dailyRows = data.dailyRows || [];
   const o = data.overall || {};
 
   div.innerHTML = `
     <div class="unified-kpi-grid">
-      <div class="unified-kpi"><div class="label">Agents Covered</div><div class="value">${o.agentsCovered || 0}</div><div class="sub">Selected period</div></div>
-      <div class="unified-kpi"><div class="label">Avg QA Score</div><div class="value">${o.avgQaScore || 0}%</div><div class="sub">From QA workbook</div></div>
-      <div class="unified-kpi"><div class="label">Avg CSAT</div><div class="value">${o.avgCsatScore || 0}%</div><div class="sub">From productivity workbook</div></div>
-      <div class="unified-kpi"><div class="label">Connected</div><div class="value">${o.connected || 0}</div><div class="sub">Total calls</div></div>
-      <div class="unified-kpi"><div class="label">Missed</div><div class="value">${o.missed || 0}</div><div class="sub">Total missed</div></div>
+      <div class="unified-kpi"><div class="label">Connected</div><div class="value">${o.connected || 0}</div><div class="sub">Selected period</div></div>
+      <div class="unified-kpi"><div class="label">Missed</div><div class="value">${o.missed || 0}</div><div class="sub">Selected period</div></div>
+      <div class="unified-kpi"><div class="label">Fill Rate</div><div class="value">${o.fillRate || 0}%</div><div class="sub">From connected</div></div>
+      <div class="unified-kpi"><div class="label">CSAT Score</div><div class="value">${o.csatScore || 0}%</div><div class="sub">Satisfied / total responses</div></div>
+      <div class="unified-kpi"><div class="label">Responses</div><div class="value">${o.responses || 0}</div><div class="sub">Satisfied + Neutral + Dissatisfied</div></div>
     </div>
 
-    <div class="unified-grid">
-      <div class="unified-card">
-        <h2>Unified Agent Performance</h2>
-        <p style="margin-top:-8px;color:#64748b;">Period: <b>${escapeHtml(data.period || "")}</b></p>
-        <table class="unified-table">
-          <thead>
-            <tr>
-              <th>Agent</th>
-              <th>QA Score</th>
-              <th>CSAT</th>
-              <th>Connected</th>
-              <th>Missed</th>
-              <th>Fill Rate</th>
-              <th>Overall</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => `
-              <tr>
-                <td><b>${escapeHtml(r.agent)}</b></td>
-                <td>${r.qaScore === "-" ? "-" : r.qaScore + "%"}</td>
-                <td>${r.csatScore === "-" ? "-" : r.csatScore + "%"}</td>
-                <td>${r.connected || 0}</td>
-                <td>${r.missed || 0}</td>
-                <td>${r.fillRate || 0}%</td>
-                <td><b>${r.overallScore}%</b></td>
-                <td><span class="performance-badge ${unifiedStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="unified-card">
-        <h2>Manager Insight</h2>
-        <div class="unified-note">
-          ${escapeHtml(data.insight || "Unified insight will appear here.")}
-        </div>
-        <h3 style="margin-top:18px;">Top Focus Areas</h3>
-        <div style="display:grid;gap:10px;">
-          ${(data.focusAreas || []).map(x => `<div class="gap-item"><strong>${escapeHtml(x.label)}</strong><span class="performance-badge ${unifiedStatusClass(x.level)}">${escapeHtml(x.value)}</span></div>`).join("") || "<p>No focus area found.</p>"}
-        </div>
-      </div>
+    <div class="unified-card" style="margin-bottom:18px;">
+      <h2>CSAT Agent Summary</h2>
+      <p style="margin-top:-8px;color:#64748b;"><b>Period:</b> ${escapeHtml(data.period || "")}</p>
+      ${renderSimpleDataTable(
+        ["Team Member","Connected","Missed","Fill rate (from connected)","Fill rate %","1 (Satisfied)","2 (Neutral)","3 (Dissatisfied)","CSAT Score"],
+        rows.map(r => [r.agent, r.connected, r.missed, r.fillCount, r.fillRate + "%", r.satisfied, r.neutral, r.dissatisfied, r.csatScore + "%"])
+      )}
     </div>
+
+    <div class="unified-card">
+      <h2>Daily CSAT Report</h2>
+      ${renderSimpleDataTable(
+        ["Date","Connected","Missed","Fill rate (from connected)","Fill rate %","1 (Satisfied)","2 (Neutral)","3 (Dissatisfied)","CSAT Score"],
+        dailyRows.map(r => [r.date, r.connected, r.missed, r.fillCount, r.fillRate + "%", r.satisfied, r.neutral, r.dissatisfied, r.csatScore + "%"])
+      )}
+    </div>
+  `;
+}
+
+function renderSimpleDataTable(headers, rows) {
+  if (!rows || !rows.length) return `<p style="color:#64748b;">No data found.</p>`;
+
+  return `
+    <table class="unified-table">
+      <thead>
+        <tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${rows.map(row => `
+          <tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>
+        `).join("")}
+      </tbody>
+    </table>
   `;
 }
 
@@ -2774,7 +2859,7 @@ function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
   if (restricted) restricted.style.display = "none";
   showDashboardView("none");
-  ["navAgent","navAll","navCharts","navAiInsight","navUnified","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
