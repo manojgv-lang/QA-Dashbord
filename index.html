@@ -30,6 +30,39 @@ body {
   color:var(--text);
   min-height:100vh;
 }
+
+
+/* Login-state UI: sidebar stays hidden until a user is verified */
+body:not(.logged-in) .sidebar { display:none; }
+body.logged-in .sidebar { display:flex; }
+body:not(.logged-in) .main { width:100%; }
+body:not(.logged-in) .content { animation: loginFadeIn .65s ease both; }
+body:not(.logged-in) .top-header { animation: loginSlideDown .55s ease both; }
+body:not(.logged-in) .login-main-btn { animation: pulseLogin 1.8s ease-in-out infinite; }
+body:not(.logged-in) .system-login-toggle-btn { animation: softBounceLogin 2.4s ease-in-out infinite; }
+.system-login-box.open { animation: loginPanelOpen .28s ease both; }
+
+@keyframes pulseLogin {
+  0% { box-shadow:0 0 0 0 rgba(29,92,255,.45), 0 12px 28px rgba(29,92,255,.28); }
+  70% { box-shadow:0 0 0 16px rgba(29,92,255,0), 0 12px 28px rgba(29,92,255,.28); }
+  100% { box-shadow:0 0 0 0 rgba(29,92,255,0), 0 12px 28px rgba(29,92,255,.28); }
+}
+@keyframes softBounceLogin {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-3px); }
+}
+@keyframes loginFadeIn {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes loginSlideDown {
+  from { opacity:0; transform:translateY(-10px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes loginPanelOpen {
+  from { opacity:0; transform:translateY(-8px) scale(.98); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
 .app-shell { display:flex; min-height:100vh; width:100%; }
 .sidebar {
   width:260px;
@@ -621,7 +654,7 @@ a:hover { text-decoration:underline; }
           <div class="quick-card"><div class="quick-label">Total Missed</div><div class="quick-value" id="missedTotal">0</div><div class="quick-sub">All rows in sheet</div></div>
           <div class="quick-card"><div class="quick-label">Pending</div><div class="quick-value" id="missedPending">0</div><div class="quick-sub">Shown in dashboard</div></div>
           <div class="quick-card"><div class="quick-label">Actioned</div><div class="quick-value" id="missedActioned">0</div><div class="quick-sub">Hidden from dashboard</div></div>
-          <div class="quick-card"><div class="quick-label">Resolved</div><div class="quick-value" id="missedResolved">0</div><div class="quick-sub">Called Back / Resolved</div></div>
+          <div class="quick-card"><div class="quick-label">Connected / RNR</div><div class="quick-value" id="missedResolved">0</div><div class="quick-sub">Action completed</div></div>
         </div>
 
         <div class="card">
@@ -1088,6 +1121,8 @@ async function systemLogin() {
 }
 
 function applyLoggedInUser(data) {
+  document.body.classList.add("logged-in");
+
   CURRENT_ROLE = data.role;
   CURRENT_AGENT = data.agent || "";
   ALL_AGENTS = Array.isArray(data.agents) ? data.agents.filter(Boolean) : [];
@@ -3410,9 +3445,8 @@ async function loadMissedCallsDashboard() {
         <td>${escapeHtml(item.outcome)}</td>
         <td>
           <select id="missedStatus_${index}">
-            <option value="Called Back">Called Back</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Not Connected">Not Connected</option>
+            <option value="Connected">Connected</option>
+            <option value="RNR">RNR</option>
           </select>
         </td>
         <td>
