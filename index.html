@@ -393,6 +393,9 @@ a:hover { text-decoration:underline; }
         <span class="nav-left"><span class="nav-icon">₹</span><span class="nav-label">Incentive Eligibility</span></span><span class="nav-arrow">›</span>
       </button>
 
+      <button class="nav-item" id="navMissedCalls" onclick="showDashboardView('missedCalls')">
+        <span class="nav-left"><span class="nav-icon">☎</span><span class="nav-label">Missed Call Tracker</span></span><span class="nav-arrow">›</span>
+      </button>
       <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
         <span class="nav-left"><span class="nav-icon">✦</span><span class="nav-label">Weekly Audit Summary</span></span><span class="nav-arrow">›</span>
       </button>
@@ -607,6 +610,30 @@ a:hover { text-decoration:underline; }
         <div id="incentiveResults" style="display:none;"></div>
       </div>
 
+
+      <div id="viewMissedCalls" style="display:none;">
+        <div class="unified-hero">
+          <small style="font-weight:900;color:#bfdbfe;">MISSED CALL TRACKER</small>
+          <h2>Missed Call Callback Dashboard</h2>
+          <p>Shows only pending missed calls from the Missed call sheet. Once an agent updates the status and remarks, it remains in the sheet but disappears from this dashboard.</p>
+        </div>
+
+        <div class="quick-grid">
+          <div class="quick-card"><div class="quick-label">Total Missed</div><div class="quick-value" id="missedTotal">0</div><div class="quick-sub">All rows in sheet</div></div>
+          <div class="quick-card"><div class="quick-label">Pending</div><div class="quick-value" id="missedPending">0</div><div class="quick-sub">Shown in dashboard</div></div>
+          <div class="quick-card"><div class="quick-label">Actioned</div><div class="quick-value" id="missedActioned">0</div><div class="quick-sub">Hidden from dashboard</div></div>
+          <div class="quick-card"><div class="quick-label">Resolved</div><div class="quick-value" id="missedResolved">0</div><div class="quick-sub">Called Back / Resolved</div></div>
+        </div>
+
+        <div class="card">
+          <h2>Pending Missed Calls</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">All agents can update any pending missed call. Updating the status will not delete the row from Google Sheet.</p>
+          <button class="btn-primary" onclick="loadMissedCallsDashboard()">Refresh</button>
+          <p id="missedCallsStatus" class="loading"></p>
+          <div id="missedCallsTable"></div>
+        </div>
+      </div>
+
       <div id="viewWeekly" style="display:none;">
         <div class="card">
           <h2>Weekly Audit Summary Email</h2>
@@ -723,6 +750,7 @@ let BULK_PREVIEW_BASE_META = "";
 let BULK_PREVIEW_SUMMARY_HTML = "";
 let CURRENT_PRODUCTIVITY_REPORT = null;
 let CURRENT_CSAT_REPORT = null;
+let MISSED_CALLS_CACHE = [];
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -2142,11 +2170,11 @@ async function submitNotSatisfiedResponse() {
 
 
 function setActiveNav(name) {
-  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navMissedCalls","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "productivity" ? "navProductivity" : name === "csat" ? "navCsat" : name === "incentive" ? "navIncentive" : name === "weekly" ? "navWeekly" : "";
+  const activeId = name === "agent" ? "navAgent" : name === "all" ? "navAll" : name === "disputes" ? "navDisputes" : name === "charts" ? "navCharts" : name === "aiInsight" ? "navAiInsight" : name === "productivity" ? "navProductivity" : name === "csat" ? "navCsat" : name === "incentive" ? "navIncentive" : name === "missedCalls" ? "navMissedCalls" : name === "weekly" ? "navWeekly" : "";
   if (activeId && document.getElementById(activeId)) document.getElementById(activeId).classList.add("active");
 }
 
@@ -2199,6 +2227,7 @@ function showDashboardView(name) {
   const productivity = document.getElementById("viewProductivity");
   const csat = document.getElementById("viewCsat");
   const incentive = document.getElementById("viewIncentive");
+  const missedCalls = document.getElementById("viewMissedCalls");
   const weekly = document.getElementById("viewWeekly");
 
   if (agent) agent.style.display = "none";
@@ -2209,6 +2238,7 @@ function showDashboardView(name) {
   if (productivity) productivity.style.display = "none";
   if (csat) csat.style.display = "none";
   if (incentive) incentive.style.display = "none";
+  if (missedCalls) missedCalls.style.display = "none";
   if (weekly) weekly.style.display = "none";
 
   if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "productivity" || name === "csat" || name === "incentive") && !isAdminLikeRole(CURRENT_ROLE)) {
@@ -2226,6 +2256,7 @@ function showDashboardView(name) {
   if (productivity) productivity.style.display = name === "productivity" ? "block" : "none";
   if (csat) csat.style.display = name === "csat" ? "block" : "none";
   if (incentive) incentive.style.display = name === "incentive" ? "block" : "none";
+  if (missedCalls) missedCalls.style.display = name === "missedCalls" ? "block" : "none";
   if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
 
   if (name === "charts") {
@@ -2272,6 +2303,10 @@ function showDashboardView(name) {
       const now = new Date();
       incMonth.value = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
     }
+  }
+
+  if (name === "missedCalls") {
+    loadMissedCallsDashboard();
   }
 
   if (name === "weekly") {
@@ -3315,11 +3350,125 @@ function incentivePointClass(value) {
   return "metric-bad";
 }
 
+
+async function loadMissedCallsDashboard() {
+  const statusEl = document.getElementById("missedCallsStatus");
+  const tableEl = document.getElementById("missedCallsTable");
+
+  if (statusEl) statusEl.textContent = "Loading pending missed calls...";
+  if (tableEl) tableEl.innerHTML = "";
+
+  const data = await apiCall({
+    action: "getMissedCallsDashboard",
+    email: CURRENT_USER
+  });
+
+  if (!data.ok) {
+    if (statusEl) statusEl.textContent = data.error || "Failed to load missed calls.";
+    return;
+  }
+
+  MISSED_CALLS_CACHE = data.calls || [];
+
+  const summary = data.summary || {};
+  const totalEl = document.getElementById("missedTotal");
+  const pendingEl = document.getElementById("missedPending");
+  const actionedEl = document.getElementById("missedActioned");
+  const resolvedEl = document.getElementById("missedResolved");
+
+  if (totalEl) totalEl.textContent = summary.total || 0;
+  if (pendingEl) pendingEl.textContent = summary.pending || 0;
+  if (actionedEl) actionedEl.textContent = summary.actioned || 0;
+  if (resolvedEl) resolvedEl.textContent = summary.resolved || 0;
+
+  if (statusEl) statusEl.textContent = "Loaded successfully.";
+
+  if (!MISSED_CALLS_CACHE.length) {
+    if (tableEl) tableEl.innerHTML = `<div class="summary-box">No pending missed calls. All missed calls remain saved in Google Sheet.</div>`;
+    return;
+  }
+
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Customer Number</th>
+          <th>Outcome</th>
+          <th>Status</th>
+          <th>Agent Remarks</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  MISSED_CALLS_CACHE.forEach((item, index) => {
+    html += `
+      <tr class="pending">
+        <td>${escapeHtml(item.date)}</td>
+        <td>${escapeHtml(item.time)}</td>
+        <td><b>${escapeHtml(item.customerNumber)}</b></td>
+        <td>${escapeHtml(item.outcome)}</td>
+        <td>
+          <select id="missedStatus_${index}">
+            <option value="Called Back">Called Back</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Not Connected">Not Connected</option>
+          </select>
+        </td>
+        <td>
+          <textarea id="missedRemarks_${index}" rows="2" placeholder="Enter callback remarks / reason"></textarea>
+        </td>
+        <td>
+          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index})">Update</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  if (tableEl) tableEl.innerHTML = html;
+}
+
+async function updateMissedCallFromDashboard(index) {
+  const item = MISSED_CALLS_CACHE[index];
+  if (!item) return;
+
+  const statusEl = document.getElementById("missedStatus_" + index);
+  const remarksEl = document.getElementById("missedRemarks_" + index);
+
+  const newStatus = statusEl ? statusEl.value : "";
+  const remarks = remarksEl ? remarksEl.value.trim() : "";
+
+  if (!remarks) {
+    alert("Please enter agent remarks before updating.");
+    return;
+  }
+
+  const data = await apiCall({
+    action: "updateMissedCallDashboard",
+    email: CURRENT_USER,
+    rowNumber: item.rowNumber,
+    status: newStatus,
+    remarks: remarks
+  });
+
+  if (!data.ok) {
+    alert(data.error || "Failed to update missed call.");
+    return;
+  }
+
+  alert(data.message || "Missed call updated successfully.");
+  loadMissedCallsDashboard();
+}
+
 function showComingSoon(title) {
   const restricted = document.getElementById("restrictedBox");
   if (restricted) restricted.style.display = "none";
   showDashboardView("none");
-  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navWeekly","navDisputes","navActivity"].forEach(id => {
+  ["navAgent","navAll","navCharts","navAiInsight","navProductivity","navCsat","navIncentive","navMissedCalls","navWeekly","navDisputes","navActivity"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
