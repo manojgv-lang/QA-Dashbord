@@ -754,12 +754,12 @@ a:hover { text-decoration:underline; }
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBxDfkx9bBE5GMdFq4jnsG8q_TzLwgjWZs",
-  authDomain: "volt-qa-dashboard.firebaseapp.com",
-  projectId: "volt-qa-dashboard",
-  storageBucket: "volt-qa-dashboard.firebasestorage.app",
-  messagingSenderId: "1028333802406",
-  appId: "1:1028333802406:web:b712a924b65bdd3e543567"
+  apiKey: "AIzaSyD2bZBRW2LMhRCWYpO_3zITCFRWbwXobU4",
+  authDomain: "qa-dashboard-indmoney-2026.firebaseapp.com",
+  projectId: "qa-dashboard-indmoney-2026",
+  storageBucket: "qa-dashboard-indmoney-2026.firebasestorage.app",
+  messagingSenderId: "650282922385",
+  appId: "1:650282922385:web:c0beea4123918a8fa96a30"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -3453,7 +3453,7 @@ async function loadMissedCallsDashboard() {
           <textarea id="missedRemarks_${index}" rows="2" placeholder="Enter callback remarks / reason"></textarea>
         </td>
         <td>
-          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index})">Update</button>
+          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
         </td>
       </tr>
     `;
@@ -3463,7 +3463,7 @@ async function loadMissedCallsDashboard() {
   if (tableEl) tableEl.innerHTML = html;
 }
 
-async function updateMissedCallFromDashboard(index) {
+async function updateMissedCallFromDashboard(index, btn) {
   const item = MISSED_CALLS_CACHE[index];
   if (!item) return;
 
@@ -3478,21 +3478,49 @@ async function updateMissedCallFromDashboard(index) {
     return;
   }
 
-  const data = await apiCall({
-    action: "updateMissedCallDashboard",
-    email: CURRENT_USER,
-    rowNumber: item.rowNumber,
-    status: newStatus,
-    remarks: remarks
-  });
+  const clickedBtn = btn || event?.target;
+  const oldBtnText = clickedBtn ? clickedBtn.textContent : "";
 
-  if (!data.ok) {
-    alert(data.error || "Failed to update missed call.");
-    return;
+  try {
+    if (clickedBtn) {
+      clickedBtn.disabled = true;
+      clickedBtn.textContent = "Submitting...";
+    }
+    if (statusEl) statusEl.disabled = true;
+    if (remarksEl) remarksEl.disabled = true;
+
+    const data = await apiCall({
+      action: "updateMissedCallDashboard",
+      email: CURRENT_USER,
+      rowNumber: item.rowNumber,
+      status: newStatus,
+      remarks: remarks
+    });
+
+    if (!data.ok) {
+      alert(data.error || "Failed to update missed call.");
+      if (clickedBtn) {
+        clickedBtn.disabled = false;
+        clickedBtn.textContent = oldBtnText || "Update";
+      }
+      if (statusEl) statusEl.disabled = false;
+      if (remarksEl) remarksEl.disabled = false;
+      return;
+    }
+
+    if (clickedBtn) clickedBtn.textContent = "Submitted";
+    alert("Submitted");
+    loadMissedCallsDashboard();
+
+  } catch (err) {
+    alert(err.message || "Failed to update missed call.");
+    if (clickedBtn) {
+      clickedBtn.disabled = false;
+      clickedBtn.textContent = oldBtnText || "Update";
+    }
+    if (statusEl) statusEl.disabled = false;
+    if (remarksEl) remarksEl.disabled = false;
   }
-
-  alert(data.message || "Missed call updated successfully.");
-  loadMissedCallsDashboard();
 }
 
 function showComingSoon(title) {
