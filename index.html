@@ -392,10 +392,10 @@ a:hover { text-decoration:underline; }
       <button class="nav-item" id="navIncentive" onclick="showDashboardView('incentive')">
         <span class="nav-left"><span class="nav-icon">₹</span><span class="nav-label">Incentive Eligibility</span></span><span class="nav-arrow">›</span>
       </button>
-
       <button class="nav-item" id="navMissedCalls" onclick="showDashboardView('missedCalls')">
         <span class="nav-left"><span class="nav-icon">☎</span><span class="nav-label">Missed Call Tracker</span></span><span class="nav-arrow">›</span>
       </button>
+
       <button class="nav-item" id="navWeekly" onclick="showDashboardView('weekly')">
         <span class="nav-left"><span class="nav-icon">✦</span><span class="nav-label">Weekly Audit Summary</span></span><span class="nav-arrow">›</span>
       </button>
@@ -610,7 +610,6 @@ a:hover { text-decoration:underline; }
         <div id="incentiveResults" style="display:none;"></div>
       </div>
 
-
       <div id="viewMissedCalls" style="display:none;">
         <div class="unified-hero">
           <small style="font-weight:900;color:#bfdbfe;">MISSED CALL TRACKER</small>
@@ -750,7 +749,6 @@ let BULK_PREVIEW_BASE_META = "";
 let BULK_PREVIEW_SUMMARY_HTML = "";
 let CURRENT_PRODUCTIVITY_REPORT = null;
 let CURRENT_CSAT_REPORT = null;
-let MISSED_CALLS_CACHE = [];
 
 function isAdminLikeRole(role) {
   const adminRoles = ["admin", "tl", "qa", "manager"];
@@ -2227,8 +2225,8 @@ function showDashboardView(name) {
   const productivity = document.getElementById("viewProductivity");
   const csat = document.getElementById("viewCsat");
   const incentive = document.getElementById("viewIncentive");
-  const missedCalls = document.getElementById("viewMissedCalls");
   const weekly = document.getElementById("viewWeekly");
+  const missedCalls = document.getElementById("viewMissedCalls");
 
   if (agent) agent.style.display = "none";
   if (all) all.style.display = "none";
@@ -2238,8 +2236,8 @@ function showDashboardView(name) {
   if (productivity) productivity.style.display = "none";
   if (csat) csat.style.display = "none";
   if (incentive) incentive.style.display = "none";
-  if (missedCalls) missedCalls.style.display = "none";
   if (weekly) weekly.style.display = "none";
+  if (missedCalls) missedCalls.style.display = "none";
 
   if ((name === "all" || name === "weekly" || name === "aiInsight" || name === "productivity" || name === "csat" || name === "incentive") && !isAdminLikeRole(CURRENT_ROLE)) {
     if (restricted) restricted.style.display = "block";
@@ -2256,8 +2254,8 @@ function showDashboardView(name) {
   if (productivity) productivity.style.display = name === "productivity" ? "block" : "none";
   if (csat) csat.style.display = name === "csat" ? "block" : "none";
   if (incentive) incentive.style.display = name === "incentive" ? "block" : "none";
-  if (missedCalls) missedCalls.style.display = name === "missedCalls" ? "block" : "none";
   if (weekly) weekly.style.display = name === "weekly" ? "block" : "none";
+  if (missedCalls) missedCalls.style.display = name === "missedCalls" ? "block" : "none";
 
   if (name === "charts") {
     const chartFrom = document.getElementById("chartFromDate");
@@ -2305,10 +2303,6 @@ function showDashboardView(name) {
     }
   }
 
-  if (name === "missedCalls") {
-    loadMissedCallsDashboard();
-  }
-
   if (name === "weekly") {
     const weeklyFrom = document.getElementById("weeklyFromDate");
     const weeklyTo = document.getElementById("weeklyToDate");
@@ -2326,6 +2320,7 @@ function showDashboardView(name) {
   }
 
   setActiveNav(name);
+  if (name === "missedCalls") loadMissedCallsDashboard();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -3351,6 +3346,8 @@ function incentivePointClass(value) {
 }
 
 
+let MISSED_CALLS_CACHE = [];
+
 async function loadMissedCallsDashboard() {
   const statusEl = document.getElementById("missedCallsStatus");
   const tableEl = document.getElementById("missedCallsTable");
@@ -3369,8 +3366,8 @@ async function loadMissedCallsDashboard() {
   }
 
   MISSED_CALLS_CACHE = data.calls || [];
-
   const summary = data.summary || {};
+
   const totalEl = document.getElementById("missedTotal");
   const pendingEl = document.getElementById("missedPending");
   const actionedEl = document.getElementById("missedActioned");
