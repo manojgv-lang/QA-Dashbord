@@ -647,11 +647,11 @@ a:hover { text-decoration:underline; }
         <div class="unified-hero">
           <small style="font-weight:900;color:#bfdbfe;">MISSED CALL TRACKER</small>
           <h2>Missed Call Tracker</h2>
-          <p>Shows missed call records from Daily Tracker. Agents can update status, issue category, issue type and optional remarks. This tab auto-refreshes every 60 seconds.</p>
+          <p>Shows missed calls from Missed_Call_Report. Agents can update status, issue category, issue type and optional remarks. Agent name is captured automatically after update. This tab auto-refreshes every 60 seconds.</p>
         </div>
 
         <div class="quick-grid">
-          <div class="quick-card"><div class="quick-label">Total Missed</div><div class="quick-value" id="missedTotal">0</div><div class="quick-sub">All rows in sheet</div></div>
+          <div class="quick-card"><div class="quick-label">Total Missed</div><div class="quick-value" id="missedTotal">0</div><div class="quick-sub">All rows in Missed_Call_Report</div></div>
           <div class="quick-card"><div class="quick-label">Pending</div><div class="quick-value" id="missedPending">0</div><div class="quick-sub">Status not updated</div></div>
           <div class="quick-card"><div class="quick-label">Connected</div><div class="quick-value" id="missedConnected">0</div><div class="quick-sub">Connected status</div></div>
           <div class="quick-card"><div class="quick-label">Not Connected</div><div class="quick-value" id="missedNotConnected">0</div><div class="quick-sub">Not connected status</div></div>
@@ -659,7 +659,6 @@ a:hover { text-decoration:underline; }
 
         <div class="card">
           <h2>Missed Calls</h2>
-          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">Status has only 2 options: Connected and Not Connected. Remarks are optional.</p>
           <button class="btn-primary" onclick="loadMissedCallsDashboard(false)">Refresh</button>
           <span style="display:inline-block;margin-left:8px;color:#64748b;font-size:13px;font-weight:700;">Auto refresh: every 60 seconds</span>
           <p id="missedCallsStatus" class="loading"></p>
@@ -3489,7 +3488,7 @@ function renderMissedCallsTable() {
   if (!tableEl) return;
 
   if (!MISSED_CALLS_CACHE.length) {
-    tableEl.innerHTML = `<div class="summary-box">No missed call records found.</div>`;
+    tableEl.innerHTML = `<div class="summary-box">No pending missed call records found.</div>`;
     return;
   }
 
@@ -3497,11 +3496,11 @@ function renderMissedCallsTable() {
     <table>
       <thead>
         <tr>
-          <th>Call Done By</th>
-          <th>From Date</th>
-          <th>From Number</th>
-          <th>To Date</th>
-          <th>Status</th>
+          <th>Call SID</th>
+          <th>Call Date</th>
+          <th>Customer Number</th>
+          <th>Current Status</th>
+          <th>Update Status</th>
           <th>Issue Category</th>
           <th>Issue Type</th>
           <th>Remarks</th>
@@ -3514,10 +3513,10 @@ function renderMissedCallsTable() {
   MISSED_CALLS_CACHE.forEach((item, index) => {
     html += `
       <tr class="pending">
-        <td>${escapeHtml(item.agent || item.callDoneBy || "")}</td>
-        <td>${escapeHtml(item.fromDate || item.date || "")}</td>
-        <td><b>${escapeHtml(item.fromNumber || item.customerNumber || "")}</b></td>
-        <td>${escapeHtml(item.toDate || "")}</td>
+        <td>${escapeHtml(item.callSid || "")}</td>
+        <td>${escapeHtml(item.callDate || "")}</td>
+        <td><b>${escapeHtml(item.customerNumber || "")}</b></td>
+        <td><b>${escapeHtml(item.currentStatus || "Missed Call")}</b></td>
         <td>
           <select id="missedStatus_${index}">
             ${missedOptionHtml(MISSED_STATUS_OPTIONS, item.status)}
@@ -3534,7 +3533,7 @@ function renderMissedCallsTable() {
           </select>
         </td>
         <td>
-          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional">${escapeHtml(item.remarks || item.agentRemarks || "")}</textarea>
+          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional">${escapeHtml(item.remarks || "")}</textarea>
         </td>
         <td>
           <button class="green-btn" onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
