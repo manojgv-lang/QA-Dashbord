@@ -647,20 +647,20 @@ a:hover { text-decoration:underline; }
         <div class="unified-hero">
           <small style="font-weight:900;color:#bfdbfe;">MISSED CALL TRACKER</small>
           <h2>Missed Call Callback Dashboard</h2>
-          <p>Shows only pending missed calls from the Missed call sheet. Once an agent updates the status and remarks, it remains in the sheet but disappears from this dashboard.</p>
+          <p>Missed-call records auto refresh every 60 seconds. Status has only 2 options: Connected and Not Connected. Remarks are optional.</p>
         </div>
 
         <div class="quick-grid">
           <div class="quick-card"><div class="quick-label">Total Missed</div><div class="quick-value" id="missedTotal">0</div><div class="quick-sub">All rows in sheet</div></div>
-          <div class="quick-card"><div class="quick-label">Pending</div><div class="quick-value" id="missedPending">0</div><div class="quick-sub">Shown in dashboard</div></div>
-          <div class="quick-card"><div class="quick-label">Actioned</div><div class="quick-value" id="missedActioned">0</div><div class="quick-sub">Hidden from dashboard</div></div>
-          <div class="quick-card"><div class="quick-label">Connected / RNR</div><div class="quick-value" id="missedResolved">0</div><div class="quick-sub">Action completed</div></div>
+          <div class="quick-card"><div class="quick-label">Pending</div><div class="quick-value" id="missedPending">0</div><div class="quick-sub">Status not updated</div></div>
+          <div class="quick-card"><div class="quick-label">Connected</div><div class="quick-value" id="missedConnected">0</div><div class="quick-sub">Callback connected</div></div>
+          <div class="quick-card"><div class="quick-label">Not Connected</div><div class="quick-value" id="missedNotConnected">0</div><div class="quick-sub">RNR / no response</div></div>
         </div>
 
         <div class="card">
-          <h2>Pending Missed Calls</h2>
-          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">All agents can update any pending missed call. Updating the status will not delete the row from Google Sheet.</p>
-          <button class="btn-primary" onclick="loadMissedCallsDashboard()">Refresh</button>
+          <h2>Missed Calls</h2>
+          <p style="margin-top:-8px;color:#64748b;line-height:1.6;">All agents can update missed calls. Select status, issue category, issue type and save. Remarks are not mandatory.</p>
+          <button class="btn-primary" onclick="loadMissedCallsDashboard(false)">Refresh</button>
           <p id="missedCallsStatus" class="loading"></p>
           <div id="missedCallsTable"></div>
         </div>
@@ -2355,7 +2355,8 @@ function showDashboardView(name) {
   }
 
   setActiveNav(name);
-  if (name === "missedCalls") loadMissedCallsDashboard();
+  if (name === "missedCalls") startMissedAutoRefresh();
+  else stopMissedAutoRefresh();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -3381,42 +3382,108 @@ function incentivePointClass(value) {
 }
 
 
-let MISSED_CALLS_CACHE = [];
 
-async function loadMissedCallsDashboard() {
+let MISSED_CALLS_CACHE = [];
+let MISSED_AUTO_REFRESH_TIMER = null;
+let MISSED_CALLS_LOADING = false;
+
+const MISSED_STATUS_OPTIONS = ["Connected", "Not Connected"];
+const MISSED_ISSUE_CATEGORY_OPTIONS = [
+  "Pre - Loan Issue",
+  "Post - Loan Issue",
+  "Enhancement Issue",
+  "General Concern"
+];
+const MISSED_ISSUE_TYPE_OPTIONS = [
+  "Fetch Issue",
+  "Pledge Issue",
+  "KYC Issue",
+  "Mandate Issue",
+  "Credit Approval",
+  "Lodgement Issue",
+  "Blocked at Bank Account verification",
+  "Need LAMF details",
+  "Repayment Issue",
+  "Foreclosure Issue",
+  "Shortfall Issue",
+  "Sell off concern",
+  "Withdrawal Concern",
+  "Charges Dispute",
+  "Bank account change",
+  "Line Enhancement",
+  "Unpledge issue",
+  "Disbursal issue",
+  "Document request"
+];
+
+function startMissedAutoRefresh() {
+  stopMissedAutoRefresh();
+  loadMissedCallsDashboard(false);
+  MISSED_AUTO_REFRESH_TIMER = setInterval(function() {
+    loadMissedCallsDashboard(true);
+  }, 60000);
+}
+
+function stopMissedAutoRefresh() {
+  if (MISSED_AUTO_REFRESH_TIMER) {
+    clearInterval(MISSED_AUTO_REFRESH_TIMER);
+    MISSED_AUTO_REFRESH_TIMER = null;
+  }
+}
+
+async function loadMissedCallsDashboard(isAutoRefresh) {
+  if (MISSED_CALLS_LOADING) return;
+  MISSED_CALLS_LOADING = true;
+
   const statusEl = document.getElementById("missedCallsStatus");
   const tableEl = document.getElementById("missedCallsTable");
 
-  if (statusEl) statusEl.textContent = "Loading pending missed calls...";
-  if (tableEl) tableEl.innerHTML = "";
+  if (statusEl) statusEl.textContent = isAutoRefresh ? "Auto refreshing missed calls..." : "Loading missed calls...";
+  if (tableEl && !isAutoRefresh) tableEl.innerHTML = "";
 
-  const data = await apiCall({
-    action: "getMissedCallsDashboard",
-    email: CURRENT_USER
-  });
+  try {
+    const data = await apiCall({
+      action: "getMissedCallsDashboard",
+      email: CURRENT_USER
+    });
 
-  if (!data.ok) {
-    if (statusEl) statusEl.textContent = data.error || "Failed to load missed calls.";
-    return;
+    if (!data.ok) {
+      if (statusEl) statusEl.textContent = data.error || "Failed to load missed calls.";
+      return;
+    }
+
+    MISSED_CALLS_CACHE = data.calls || [];
+    const summary = data.summary || {};
+
+    const totalEl = document.getElementById("missedTotal");
+    const pendingEl = document.getElementById("missedPending");
+    const connectedEl = document.getElementById("missedConnected");
+    const notConnectedEl = document.getElementById("missedNotConnected");
+
+    if (totalEl) totalEl.textContent = summary.total || 0;
+    if (pendingEl) pendingEl.textContent = summary.pending || 0;
+    if (connectedEl) connectedEl.textContent = summary.connected || 0;
+    if (notConnectedEl) notConnectedEl.textContent = summary.notConnected || 0;
+
+    renderMissedCallsTable();
+
+    if (statusEl) {
+      const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      statusEl.textContent = "Loaded successfully. Last refresh: " + now + " | Auto refresh: ON";
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = err.message || "Failed to load missed calls.";
+  } finally {
+    MISSED_CALLS_LOADING = false;
   }
+}
 
-  MISSED_CALLS_CACHE = data.calls || [];
-  const summary = data.summary || {};
-
-  const totalEl = document.getElementById("missedTotal");
-  const pendingEl = document.getElementById("missedPending");
-  const actionedEl = document.getElementById("missedActioned");
-  const resolvedEl = document.getElementById("missedResolved");
-
-  if (totalEl) totalEl.textContent = summary.total || 0;
-  if (pendingEl) pendingEl.textContent = summary.pending || 0;
-  if (actionedEl) actionedEl.textContent = summary.actioned || 0;
-  if (resolvedEl) resolvedEl.textContent = summary.resolved || 0;
-
-  if (statusEl) statusEl.textContent = "Loaded successfully.";
+function renderMissedCallsTable() {
+  const tableEl = document.getElementById("missedCallsTable");
+  if (!tableEl) return;
 
   if (!MISSED_CALLS_CACHE.length) {
-    if (tableEl) tableEl.innerHTML = `<div class="summary-box">No pending missed calls. All missed calls remain saved in Google Sheet.</div>`;
+    tableEl.innerHTML = `<div class="summary-box">No missed call records found.</div>`;
     return;
   }
 
@@ -3424,12 +3491,14 @@ async function loadMissedCallsDashboard() {
     <table>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Customer Number</th>
-          <th>Outcome</th>
+          <th>Call Done By</th>
+          <th>From Date</th>
+          <th>From Number</th>
+          <th>To Date</th>
           <th>Status</th>
-          <th>Agent Remarks</th>
+          <th>Issue Category</th>
+          <th>Issue Type</th>
+          <th>Remarks</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -3439,28 +3508,46 @@ async function loadMissedCallsDashboard() {
   MISSED_CALLS_CACHE.forEach((item, index) => {
     html += `
       <tr class="pending">
-        <td>${escapeHtml(item.date)}</td>
-        <td>${escapeHtml(item.time)}</td>
-        <td><b>${escapeHtml(item.customerNumber)}</b></td>
-        <td>${escapeHtml(item.outcome)}</td>
+        <td><b>${escapeHtml(item.agent || item.callDoneBy || "-")}</b></td>
+        <td>${escapeHtml(item.fromDate || item.date || "-")}</td>
+        <td><b>${escapeHtml(item.fromNumber || item.customerNumber || "-")}</b></td>
+        <td>${escapeHtml(item.toDate || "-")}</td>
         <td>
           <select id="missedStatus_${index}">
-            <option value="Connected">Connected</option>
-            <option value="RNR">RNR</option>
+            ${buildMissedOptions(MISSED_STATUS_OPTIONS, item.status)}
           </select>
         </td>
         <td>
-          <textarea id="missedRemarks_${index}" rows="2" placeholder="Enter callback remarks / reason"></textarea>
+          <select id="missedIssueCategory_${index}">
+            ${buildMissedOptions(MISSED_ISSUE_CATEGORY_OPTIONS, item.issueCategory)}
+          </select>
         </td>
         <td>
-          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
+          <select id="missedIssueType_${index}">
+            ${buildMissedOptions(MISSED_ISSUE_TYPE_OPTIONS, item.issueType)}
+          </select>
+        </td>
+        <td>
+          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional">${escapeHtml(item.remarks || item.agentRemarks || "")}</textarea>
+        </td>
+        <td>
+          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index}, this)">Save</button>
         </td>
       </tr>
     `;
   });
 
   html += `</tbody></table>`;
-  if (tableEl) tableEl.innerHTML = html;
+  tableEl.innerHTML = html;
+}
+
+function buildMissedOptions(options, selectedValue) {
+  selectedValue = String(selectedValue || "").toLowerCase().trim();
+
+  return `<option value="">Select</option>` + (options || []).map(function(opt) {
+    const isSelected = String(opt).toLowerCase().trim() === selectedValue ? "selected" : "";
+    return `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+  }).join("");
 }
 
 async function updateMissedCallFromDashboard(index, btn) {
@@ -3468,13 +3555,25 @@ async function updateMissedCallFromDashboard(index, btn) {
   if (!item) return;
 
   const statusEl = document.getElementById("missedStatus_" + index);
+  const categoryEl = document.getElementById("missedIssueCategory_" + index);
+  const typeEl = document.getElementById("missedIssueType_" + index);
   const remarksEl = document.getElementById("missedRemarks_" + index);
 
   const newStatus = statusEl ? statusEl.value : "";
+  const issueCategory = categoryEl ? categoryEl.value : "";
+  const issueType = typeEl ? typeEl.value : "";
   const remarks = remarksEl ? remarksEl.value.trim() : "";
 
-  if (!remarks) {
-    alert("Please enter agent remarks before updating.");
+  if (!newStatus) {
+    alert("Please select status.");
+    return;
+  }
+  if (!issueCategory) {
+    alert("Please select issue category.");
+    return;
+  }
+  if (!issueType) {
+    alert("Please select issue type.");
     return;
   }
 
@@ -3484,9 +3583,11 @@ async function updateMissedCallFromDashboard(index, btn) {
   try {
     if (clickedBtn) {
       clickedBtn.disabled = true;
-      clickedBtn.textContent = "Submitting...";
+      clickedBtn.textContent = "Saving...";
     }
     if (statusEl) statusEl.disabled = true;
+    if (categoryEl) categoryEl.disabled = true;
+    if (typeEl) typeEl.disabled = true;
     if (remarksEl) remarksEl.disabled = true;
 
     const data = await apiCall({
@@ -3494,6 +3595,8 @@ async function updateMissedCallFromDashboard(index, btn) {
       email: CURRENT_USER,
       rowNumber: item.rowNumber,
       status: newStatus,
+      issueCategory: issueCategory,
+      issueType: issueType,
       remarks: remarks
     });
 
@@ -3501,24 +3604,27 @@ async function updateMissedCallFromDashboard(index, btn) {
       alert(data.error || "Failed to update missed call.");
       if (clickedBtn) {
         clickedBtn.disabled = false;
-        clickedBtn.textContent = oldBtnText || "Update";
+        clickedBtn.textContent = oldBtnText || "Save";
       }
       if (statusEl) statusEl.disabled = false;
+      if (categoryEl) categoryEl.disabled = false;
+      if (typeEl) typeEl.disabled = false;
       if (remarksEl) remarksEl.disabled = false;
       return;
     }
 
-    if (clickedBtn) clickedBtn.textContent = "Submitted";
-    alert("Submitted");
-    loadMissedCallsDashboard();
+    if (clickedBtn) clickedBtn.textContent = "Saved";
+    await loadMissedCallsDashboard(true);
 
   } catch (err) {
     alert(err.message || "Failed to update missed call.");
     if (clickedBtn) {
       clickedBtn.disabled = false;
-      clickedBtn.textContent = oldBtnText || "Update";
+      clickedBtn.textContent = oldBtnText || "Save";
     }
     if (statusEl) statusEl.disabled = false;
+    if (categoryEl) categoryEl.disabled = false;
+    if (typeEl) typeEl.disabled = false;
     if (remarksEl) remarksEl.disabled = false;
   }
 }
