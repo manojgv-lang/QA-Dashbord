@@ -3611,7 +3611,15 @@ async function updateMissedCallFromDashboard(index, btn) {
     }
 
     if (clickedBtn) clickedBtn.textContent = "Submitted";
-    await loadMissedCallsDashboard(true);
+
+    // Hide row immediately after successful update, but keep data in Google Sheet.
+    MISSED_CALLS_CACHE.splice(index, 1);
+    renderMissedCallsTable();
+
+    // Also refresh from sheet so summary counts update.
+    setTimeout(function () {
+      loadMissedCallsDashboard(true);
+    }, 600);
 
   } catch (err) {
     alert(err.message || "Failed to update missed call.");
