@@ -3383,7 +3383,7 @@ let MISSED_CALLS_CACHE = [];
 let MISSED_AUTO_REFRESH_TIMER = null;
 let MISSED_IS_LOADING = false;
 
-const MISSED_STATUS_OPTIONS = ["Connected", "Not Connected"];
+const MISSED_STATUS_OPTIONS = ["Connected", "Not Connected", "Callback"];
 const MISSED_ISSUE_CATEGORY_OPTIONS = [
   "Pre - Loan Issue",
   "Post - Loan Issue",
@@ -3515,7 +3515,7 @@ function renderMissedCallsTable() {
         <td><b>${escapeHtml(item.customerNumber || "")}</b></td>
         <td><b>${escapeHtml(item.currentStatus || "Missed Call")}</b></td>
         <td>
-          <select id="missedStatus_${index}">
+          <select id="missedStatus_${index}" onchange="handleMissedStatusChange(${index})">
             ${missedOptionHtml(MISSED_STATUS_OPTIONS, item.status)}
           </select>
         </td>
@@ -3541,6 +3541,43 @@ function renderMissedCallsTable() {
 
   html += `</tbody></table>`;
   tableEl.innerHTML = html;
+
+  MISSED_CALLS_CACHE.forEach((item, index) => {
+    handleMissedStatusChange(index);
+  });
+}
+
+function handleMissedStatusChange(index) {
+  const statusEl = document.getElementById("missedStatus_" + index);
+  const categoryEl = document.getElementById("missedIssueCategory_" + index);
+  const typeEl = document.getElementById("missedIssueType_" + index);
+  const remarksEl = document.getElementById("missedRemarks_" + index);
+  const status = statusEl ? statusEl.value : "";
+
+  if (status === "Callback") {
+    if (categoryEl) {
+      categoryEl.value = "";
+      categoryEl.disabled = true;
+    }
+    if (typeEl) {
+      typeEl.value = "";
+      typeEl.disabled = true;
+    }
+    if (remarksEl) {
+      remarksEl.value = remarksEl.value || "NA";
+      remarksEl.disabled = true;
+      remarksEl.placeholder = "NA";
+    }
+    return;
+  }
+
+  if (categoryEl) categoryEl.disabled = false;
+  if (typeEl) typeEl.disabled = false;
+  if (remarksEl) {
+    remarksEl.disabled = false;
+    if (remarksEl.value === "NA" && status !== "Callback") remarksEl.value = "";
+    remarksEl.placeholder = "Remarks optional";
+  }
 }
 
 async function updateMissedCallFromDashboard(index, btn) {
@@ -3570,6 +3607,16 @@ async function updateMissedCallFromDashboard(index, btn) {
     return;
   }
 
+  let finalIssueCategory = issueCategory;
+  let finalIssueType = issueType;
+  let finalRemarks = remarks;
+
+  if (newStatus === "Callback") {
+    finalIssueCategory = "NA";
+    finalIssueType = "NA";
+    finalRemarks = finalRemarks || "NA";
+  }
+
   const clickedBtn = btn || event?.target;
   const oldBtnText = clickedBtn ? clickedBtn.textContent : "";
 
@@ -3588,9 +3635,9 @@ async function updateMissedCallFromDashboard(index, btn) {
       email: CURRENT_USER,
       rowNumber: item.rowNumber,
       status: newStatus,
-      issueCategory: issueCategory,
-      issueType: issueType,
-      remarks: remarks
+      issueCategory: finalIssueCategory,
+      issueType: finalIssueType,
+      remarks: finalRemarks
     });
 
     if (!data.ok) {
