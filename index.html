@@ -3496,6 +3496,7 @@ function renderMissedCallsTable() {
           <th>Call SID</th>
           <th>Call Date</th>
           <th>Customer Number</th>
+          <th>Working Status</th>
           <th>Current Status</th>
           <th>Update Status</th>
           <th>Issue Category</th>
@@ -3508,32 +3509,46 @@ function renderMissedCallsTable() {
   `;
 
   MISSED_CALLS_CACHE.forEach((item, index) => {
+    const lockedByOther = !!item.lockedByOther;
+    const lockActive = !!item.lockActive;
+    const workingText = lockActive
+      ? `Working by ${escapeHtml(item.workingBy || "Someone")}${item.workingTime ? `<br><small>${escapeHtml(item.workingTime)}</small>` : ""}`
+      : `<span style="color:#64748b;font-weight:700;">Available</span>`;
+
+    const copyDisabled = lockedByOther ? "disabled" : "";
+    const copyText = lockedByOther ? "Locked" : "Copy";
+    const formDisabled = lockedByOther ? "disabled" : "";
+
     html += `
       <tr class="pending">
         <td>${escapeHtml(item.callSid || "")}</td>
         <td>${escapeHtml(item.callDate || "")}</td>
-        <td><b>${escapeHtml(item.customerNumber || "")}</b></td>
+        <td>
+          <b>${escapeHtml(item.customerNumber || "")}</b><br>
+          <button class="btn-light" ${copyDisabled} onclick="copyMissedCallNumber(${index}, this)">${copyText}</button>
+        </td>
+        <td><b>${workingText}</b></td>
         <td><b>${escapeHtml(item.currentStatus || "Missed Call")}</b></td>
         <td>
-          <select id="missedStatus_${index}" onchange="handleMissedStatusChange(${index})">
+          <select id="missedStatus_${index}" ${formDisabled} onchange="handleMissedStatusChange(${index})">
             ${missedOptionHtml(MISSED_STATUS_OPTIONS, item.status)}
           </select>
         </td>
         <td>
-          <select id="missedIssueCategory_${index}">
+          <select id="missedIssueCategory_${index}" ${formDisabled}>
             ${missedOptionHtml(MISSED_ISSUE_CATEGORY_OPTIONS, item.issueCategory)}
           </select>
         </td>
         <td>
-          <select id="missedIssueType_${index}">
+          <select id="missedIssueType_${index}" ${formDisabled}>
             ${missedOptionHtml(MISSED_ISSUE_TYPE_OPTIONS, item.issueType)}
           </select>
         </td>
         <td>
-          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional">${escapeHtml(item.remarks || "")}</textarea>
+          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional" ${formDisabled}>${escapeHtml(item.remarks || "")}</textarea>
         </td>
         <td>
-          <button class="green-btn" onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
+          <button class="green-btn" ${formDisabled} onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
         </td>
       </tr>
     `;
@@ -3541,10 +3556,6 @@ function renderMissedCallsTable() {
 
   html += `</tbody></table>`;
   tableEl.innerHTML = html;
-
-  MISSED_CALLS_CACHE.forEach((item, index) => {
-    handleMissedStatusChange(index);
-  });
 }
 
 function handleMissedStatusChange(index) {
@@ -3554,29 +3565,69 @@ function handleMissedStatusChange(index) {
   const remarksEl = document.getElementById("missedRemarks_" + index);
   const status = statusEl ? statusEl.value : "";
 
-  if (status === "Callback") {
-    if (categoryEl) {
-      categoryEl.value = "";
-      categoryEl.disabled = true;
-    }
-    if (typeEl) {
-      typeEl.value = "";
-      typeEl.disabled = true;
-    }
-    if (remarksEl) {
-      remarksEl.value = remarksEl.value || "NA";
-      remarksEl.disabled = true;
-      remarksEl.placeholder = "NA";
-    }
-    return;
+  if (status === "Not Connected" || status === "Callback") {
+    if (categoryEl) categoryEl.value = "";
+    if (typeEl) typeEl.value = "";
+    if (remarksEl && !remarksEl.value.trim()) remarksEl.value = "NA";
   }
+}
 
-  if (categoryEl) categoryEl.disabled = false;
-  if (typeEl) typeEl.disabled = false;
-  if (remarksEl) {
-    remarksEl.disabled = false;
-    if (remarksEl.value === "NA" && status !== "Callback") remarksEl.value = "";
-    remarksEl.placeholder = "Remarks optional";
+async function copyMissedCallNumber(index, btn) {
+  const item = MISSED_CALLS_CACHE[index];
+  if (!item) return;
+
+  const oldText = btn ? btn.textContent : "";
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Copying...";
+    }
+
+    const data = await apiCall({
+      action: "lockMissedCallOnCopy",
+      email: CURRENT_USER,
+      rowNumber: item.rowNumber,
+      callSid: item.callSid
+    });
+
+    if (!data.ok) {
+      alert(data.message || data.error || "This number is already being worked by another agent.");
+      loadMissedCallsDashboard(true);
+      return;
+    }
+
+    const numberToCopy = data.customerNumber || item.customerNumber || "";
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(numberToCopy);
+    } else {
+      const temp = document.createElement("textarea");
+      temp.value = numberToCopy;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+    }
+
+    item.workingBy = data.workingBy || item.workingBy;
+    item.workingTime = data.workingTime || item.workingTime;
+    item.lockActive = true;
+    item.lockedByOther = false;
+
+    if (btn) btn.textContent = "Copied";
+    renderMissedCallsTable();
+
+    setTimeout(function () {
+      loadMissedCallsDashboard(true);
+    }, 500);
+
+  } catch (err) {
+    alert(err.message || "Failed to copy number.");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText || "Copy";
+    }
   }
 }
 
@@ -3584,20 +3635,32 @@ async function updateMissedCallFromDashboard(index, btn) {
   const item = MISSED_CALLS_CACHE[index];
   if (!item) return;
 
+  if (item.lockedByOther) {
+    alert(item.lockMessage || "Someone else is working on this customer.");
+    return;
+  }
+
   const statusEl = document.getElementById("missedStatus_" + index);
   const categoryEl = document.getElementById("missedIssueCategory_" + index);
   const typeEl = document.getElementById("missedIssueType_" + index);
   const remarksEl = document.getElementById("missedRemarks_" + index);
 
   const newStatus = statusEl ? statusEl.value : "";
-  const issueCategory = categoryEl ? categoryEl.value : "";
-  const issueType = typeEl ? typeEl.value : "";
-  const remarks = remarksEl ? remarksEl.value.trim() : "";
+  let issueCategory = categoryEl ? categoryEl.value : "";
+  let issueType = typeEl ? typeEl.value : "";
+  let remarks = remarksEl ? remarksEl.value.trim() : "";
 
   if (!newStatus) {
     alert("Please select status.");
     return;
   }
+
+  if (newStatus === "Not Connected" || newStatus === "Callback") {
+    issueCategory = "NA";
+    issueType = "NA";
+    remarks = remarks || "NA";
+  }
+
   if (newStatus === "Connected" && !issueCategory) {
     alert("Please select issue category.");
     return;
@@ -3605,16 +3668,6 @@ async function updateMissedCallFromDashboard(index, btn) {
   if (newStatus === "Connected" && !issueType) {
     alert("Please select issue type.");
     return;
-  }
-
-  let finalIssueCategory = issueCategory;
-  let finalIssueType = issueType;
-  let finalRemarks = remarks;
-
-  if (newStatus === "Callback") {
-    finalIssueCategory = "NA";
-    finalIssueType = "NA";
-    finalRemarks = finalRemarks || "NA";
   }
 
   const clickedBtn = btn || event?.target;
@@ -3634,10 +3687,11 @@ async function updateMissedCallFromDashboard(index, btn) {
       action: "updateMissedCallDashboard",
       email: CURRENT_USER,
       rowNumber: item.rowNumber,
+      callSid: item.callSid,
       status: newStatus,
-      issueCategory: finalIssueCategory,
-      issueType: finalIssueType,
-      remarks: finalRemarks
+      issueCategory: issueCategory,
+      issueType: issueType,
+      remarks: remarks
     });
 
     if (!data.ok) {
@@ -3655,11 +3709,9 @@ async function updateMissedCallFromDashboard(index, btn) {
 
     if (clickedBtn) clickedBtn.textContent = "Submitted";
 
-    // Hide row immediately after successful update, but keep data in Google Sheet.
     MISSED_CALLS_CACHE.splice(index, 1);
     renderMissedCallsTable();
 
-    // Also refresh from sheet so summary counts update.
     setTimeout(function () {
       loadMissedCallsDashboard(true);
     }, 600);
