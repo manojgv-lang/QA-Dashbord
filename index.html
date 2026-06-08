@@ -3417,7 +3417,7 @@ function startMissedAutoRefresh() {
   loadMissedCallsDashboard(false);
   MISSED_AUTO_REFRESH_TIMER = setInterval(function () {
     loadMissedCallsDashboard(true);
-  }, 60000);
+  }, 30000);
 }
 
 function stopMissedAutoRefresh() {
