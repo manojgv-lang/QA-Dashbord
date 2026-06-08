@@ -3414,10 +3414,26 @@ const MISSED_ISSUE_TYPE_OPTIONS = [
 
 function startMissedAutoRefresh() {
   stopMissedAutoRefresh();
+
+  // Initial load
   loadMissedCallsDashboard(false);
+
   MISSED_AUTO_REFRESH_TIMER = setInterval(function () {
-    loadMissedCallsDashboard(true);
-  }, 30000);
+
+    const now = new Date();
+    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    // 09:00 AM
+    const startMinutes = 9 * 60;
+
+    // 07:30 PM
+    const endMinutes = (19 * 60) + 30;
+
+    if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+      loadMissedCallsDashboard(true);
+    }
+
+  }, 30000); // 30 seconds
 }
 
 function stopMissedAutoRefresh() {
