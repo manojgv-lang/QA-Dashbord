@@ -3382,6 +3382,7 @@ function incentivePointClass(value) {
 let MISSED_CALLS_CACHE = [];
 let MISSED_AUTO_REFRESH_TIMER = null;
 let MISSED_IS_LOADING = false;
+let MISSED_LOCKED_EDIT_ROWS = {}; // keeps copied/working rows safe from refresh
 
 const MISSED_STATUS_OPTIONS = ["Connected", "Not Connected", "Callback"];
 const MISSED_ISSUE_CATEGORY_OPTIONS = [
@@ -3412,28 +3413,60 @@ const MISSED_ISSUE_TYPE_OPTIONS = [
   "Document request"
 ];
 
+function getMissedRowKey(item) {
+  return String((item && item.callSid) || (item && item.rowNumber) || "");
+}
+
+function saveMissedDraft(index) {
+  const item = MISSED_CALLS_CACHE[index];
+  if (!item) return;
+
+  const key = getMissedRowKey(item);
+  if (!key) return;
+
+  MISSED_LOCKED_EDIT_ROWS[key] = {
+    rowNumber: item.rowNumber,
+    callSid: item.callSid,
+    status: document.getElementById("missedStatus_" + index)?.value || "",
+    issueCategory: document.getElementById("missedIssueCategory_" + index)?.value || "",
+    issueType: document.getElementById("missedIssueType_" + index)?.value || "",
+    remarks: document.getElementById("missedRemarks_" + index)?.value || "",
+    lockActive: true
+  };
+}
+
+function mergeMissedDrafts(newCalls) {
+  return (newCalls || []).map(function(item) {
+    const key = getMissedRowKey(item);
+    const draft = MISSED_LOCKED_EDIT_ROWS[key];
+
+    if (draft) {
+      item.status = draft.status;
+      item.issueCategory = draft.issueCategory;
+      item.issueType = draft.issueType;
+      item.remarks = draft.remarks;
+      item.lockActive = true;
+      item.lockedByOther = false;
+    }
+
+    return item;
+  });
+}
+
 function startMissedAutoRefresh() {
   stopMissedAutoRefresh();
-
-  // Initial load
   loadMissedCallsDashboard(false);
 
   MISSED_AUTO_REFRESH_TIMER = setInterval(function () {
-
     const now = new Date();
     const currentMinutes = (now.getHours() * 60) + now.getMinutes();
-
-    // 09:00 AM
     const startMinutes = 9 * 60;
-
-    // 07:30 PM
     const endMinutes = (19 * 60) + 30;
 
     if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
       loadMissedCallsDashboard(true);
     }
-
-  }, 30000); // 30 seconds
+  }, 30000);
 }
 
 function stopMissedAutoRefresh() {
@@ -3472,18 +3505,13 @@ async function loadMissedCallsDashboard(isAutoRefresh = false) {
       return;
     }
 
-    MISSED_CALLS_CACHE = data.calls || [];
+    MISSED_CALLS_CACHE = mergeMissedDrafts(data.calls || []);
     const summary = data.summary || {};
 
-    const totalEl = document.getElementById("missedTotal");
-    const pendingEl = document.getElementById("missedPending");
-    const connectedEl = document.getElementById("missedConnected");
-    const notConnectedEl = document.getElementById("missedNotConnected");
-
-    if (totalEl) totalEl.textContent = summary.total || 0;
-    if (pendingEl) pendingEl.textContent = summary.pending || 0;
-    if (connectedEl) connectedEl.textContent = summary.connected || 0;
-    if (notConnectedEl) notConnectedEl.textContent = summary.notConnected || 0;
+    document.getElementById("missedTotal").textContent = summary.total || 0;
+    document.getElementById("missedPending").textContent = summary.pending || 0;
+    document.getElementById("missedConnected").textContent = summary.connected || 0;
+    document.getElementById("missedNotConnected").textContent = summary.notConnected || 0;
 
     const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
     if (statusEl) statusEl.textContent = "Loaded successfully. Last refreshed: " + now;
@@ -3528,11 +3556,11 @@ function renderMissedCallsTable() {
     const lockedByOther = !!item.lockedByOther;
     const lockActive = !!item.lockActive;
     const workingText = lockActive
-      ? `Working by ${escapeHtml(item.workingBy || "Someone")}${item.workingTime ? `<br><small>${escapeHtml(item.workingTime)}</small>` : ""}`
+      ? `Working by ${escapeHtml(item.workingBy || "You")}${item.workingTime ? `<br><small>${escapeHtml(item.workingTime)}</small>` : ""}`
       : `<span style="color:#64748b;font-weight:700;">Available</span>`;
 
     const copyDisabled = lockedByOther ? "disabled" : "";
-    const copyText = lockedByOther ? "Locked" : "Copy";
+    const copyText = lockedByOther ? "Locked" : (lockActive ? "Copied" : "Copy");
     const formDisabled = lockedByOther ? "disabled" : "";
 
     html += `
@@ -3546,22 +3574,22 @@ function renderMissedCallsTable() {
         <td><b>${workingText}</b></td>
         <td><b>${escapeHtml(item.currentStatus || "Missed Call")}</b></td>
         <td>
-          <select id="missedStatus_${index}" ${formDisabled} onchange="handleMissedStatusChange(${index})">
+          <select id="missedStatus_${index}" ${formDisabled} onchange="saveMissedDraft(${index}); handleMissedStatusChange(${index});">
             ${missedOptionHtml(MISSED_STATUS_OPTIONS, item.status)}
           </select>
         </td>
         <td>
-          <select id="missedIssueCategory_${index}" ${formDisabled}>
+          <select id="missedIssueCategory_${index}" ${formDisabled} onchange="saveMissedDraft(${index})">
             ${missedOptionHtml(MISSED_ISSUE_CATEGORY_OPTIONS, item.issueCategory)}
           </select>
         </td>
         <td>
-          <select id="missedIssueType_${index}" ${formDisabled}>
+          <select id="missedIssueType_${index}" ${formDisabled} onchange="saveMissedDraft(${index})">
             ${missedOptionHtml(MISSED_ISSUE_TYPE_OPTIONS, item.issueType)}
           </select>
         </td>
         <td>
-          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional" ${formDisabled}>${escapeHtml(item.remarks || "")}</textarea>
+          <textarea id="missedRemarks_${index}" rows="2" placeholder="Remarks optional" ${formDisabled} oninput="saveMissedDraft(${index})">${escapeHtml(item.remarks || "")}</textarea>
         </td>
         <td>
           <button class="green-btn" ${formDisabled} onclick="updateMissedCallFromDashboard(${index}, this)">Update</button>
@@ -3575,6 +3603,189 @@ function renderMissedCallsTable() {
 }
 
 function handleMissedStatusChange(index) {
+  const statusEl = document.getElementById("missedStatus_" + index);
+  const categoryEl = document.getElementById("missedIssueCategory_" + index);
+  const typeEl = document.getElementById("missedIssueType_" + index);
+  const remarksEl = document.getElementById("missedRemarks_" + index);
+  const status = statusEl ? statusEl.value : "";
+
+  if (status === "Not Connected" || status === "Callback") {
+    if (categoryEl) categoryEl.value = "";
+    if (typeEl) typeEl.value = "";
+    if (remarksEl && !remarksEl.value.trim()) remarksEl.value = "NA";
+  }
+
+  saveMissedDraft(index);
+}
+
+async function copyMissedCallNumber(index, btn) {
+  const item = MISSED_CALLS_CACHE[index];
+  if (!item) return;
+
+  const oldText = btn ? btn.textContent : "";
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Copying...";
+    }
+
+    const data = await apiCall({
+      action: "lockMissedCallOnCopy",
+      email: CURRENT_USER,
+      rowNumber: item.rowNumber,
+      callSid: item.callSid
+    });
+
+    if (!data.ok) {
+      alert(data.message || data.error || "This number is already being worked by another agent.");
+      loadMissedCallsDashboard(true);
+      return;
+    }
+
+    const numberToCopy = data.customerNumber || item.customerNumber || "";
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(numberToCopy);
+    } else {
+      const temp = document.createElement("textarea");
+      temp.value = numberToCopy;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+    }
+
+    item.workingBy = data.workingBy || item.workingBy || "You";
+    item.workingTime = data.workingTime || item.workingTime;
+    item.lockActive = true;
+    item.lockedByOther = false;
+
+    const key = getMissedRowKey(item);
+    MISSED_LOCKED_EDIT_ROWS[key] = {
+      rowNumber: item.rowNumber,
+      callSid: item.callSid,
+      status: item.status || "",
+      issueCategory: item.issueCategory || "",
+      issueType: item.issueType || "",
+      remarks: item.remarks || "",
+      lockActive: true
+    };
+
+    if (btn) btn.textContent = "Copied";
+    renderMissedCallsTable();
+
+  } catch (err) {
+    alert(err.message || "Failed to copy number.");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText || "Copy";
+    }
+  }
+}
+
+async function updateMissedCallFromDashboard(index, btn) {
+  const item = MISSED_CALLS_CACHE[index];
+  if (!item) return;
+
+  if (item.lockedByOther) {
+    alert(item.lockMessage || "Someone else is working on this customer.");
+    return;
+  }
+
+  const statusEl = document.getElementById("missedStatus_" + index);
+  const categoryEl = document.getElementById("missedIssueCategory_" + index);
+  const typeEl = document.getElementById("missedIssueType_" + index);
+  const remarksEl = document.getElementById("missedRemarks_" + index);
+
+  const newStatus = statusEl ? statusEl.value : "";
+  let issueCategory = categoryEl ? categoryEl.value : "";
+  let issueType = typeEl ? typeEl.value : "";
+  let remarks = remarksEl ? remarksEl.value.trim() : "";
+
+  if (!newStatus) {
+    alert("Please select status.");
+    return;
+  }
+
+  if (newStatus === "Not Connected" || newStatus === "Callback") {
+    issueCategory = "NA";
+    issueType = "NA";
+    remarks = remarks || "NA";
+  }
+
+  if (newStatus === "Connected" && !issueCategory) {
+    alert("Please select issue category.");
+    return;
+  }
+
+  if (newStatus === "Connected" && !issueType) {
+    alert("Please select issue type.");
+    return;
+  }
+
+  const clickedBtn = btn || event?.target;
+  const oldBtnText = clickedBtn ? clickedBtn.textContent : "";
+
+  try {
+    if (clickedBtn) {
+      clickedBtn.disabled = true;
+      clickedBtn.textContent = "Submitting...";
+    }
+
+    if (statusEl) statusEl.disabled = true;
+    if (categoryEl) categoryEl.disabled = true;
+    if (typeEl) typeEl.disabled = true;
+    if (remarksEl) remarksEl.disabled = true;
+
+    const data = await apiCall({
+      action: "updateMissedCallDashboard",
+      email: CURRENT_USER,
+      rowNumber: item.rowNumber,
+      callSid: item.callSid,
+      status: newStatus,
+      issueCategory: issueCategory,
+      issueType: issueType,
+      remarks: remarks
+    });
+
+    if (!data.ok) {
+      alert(data.error || "Failed to update missed call.");
+      if (clickedBtn) {
+        clickedBtn.disabled = false;
+        clickedBtn.textContent = oldBtnText || "Update";
+      }
+      if (statusEl) statusEl.disabled = false;
+      if (categoryEl) categoryEl.disabled = false;
+      if (typeEl) typeEl.disabled = false;
+      if (remarksEl) remarksEl.disabled = false;
+      return;
+    }
+
+    const key = getMissedRowKey(item);
+    delete MISSED_LOCKED_EDIT_ROWS[key];
+
+    if (clickedBtn) clickedBtn.textContent = "Submitted";
+
+    MISSED_CALLS_CACHE.splice(index, 1);
+    renderMissedCallsTable();
+
+    setTimeout(function () {
+      loadMissedCallsDashboard(true);
+    }, 600);
+
+  } catch (err) {
+    alert(err.message || "Failed to update missed call.");
+    if (clickedBtn) {
+      clickedBtn.disabled = false;
+      clickedBtn.textContent = oldBtnText || "Update";
+    }
+    if (statusEl) statusEl.disabled = false;
+    if (categoryEl) categoryEl.disabled = false;
+    if (typeEl) typeEl.disabled = false;
+    if (remarksEl) remarksEl.disabled = false;
+  }
+}
   const statusEl = document.getElementById("missedStatus_" + index);
   const categoryEl = document.getElementById("missedIssueCategory_" + index);
   const typeEl = document.getElementById("missedIssueType_" + index);
